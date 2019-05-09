@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/junior/project/programming_language/lisp-simulator/src/include/lisp.h
+iostream
+-
+fstream
+-
+vector
+-
+map
+-
+unordered_map
+-
+set
+-
+unordered_set
+-
+string
+-
+list
+-
+cstdint
+-
+
+/home/junior/project/programming_language/lisp-simulator/src/main.cpp
+include/lisp.h
+/home/junior/project/programming_language/lisp-simulator/src/include/lisp.h
+
