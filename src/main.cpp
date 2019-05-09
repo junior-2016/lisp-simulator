@@ -1,7 +1,6 @@
 #include "include/lisp.h"
 
 int main() {
-    lisp::test();
-    lisp::test();
+    lisp::main();
     return 0;
 }

@@ -14,7 +14,12 @@
 #include <unordered_set>
 #include <string>
 #include <list>
+#include <algorithm>
+#include <memory>
+#include <functional>
 #include <cstdint>
+#include <cstdio>
+#include <cstddef>
 
 /**
  * (define ID value):
@@ -23,6 +28,6 @@
  * 并且注意到 lisp 的 variable 是不允许 unbound 的,即每一个 ID 只能绑定一个数值/function,并且绑定后不能再修改.
  */
 namespace lisp {
-
+    void main();
 }
 #endif //LISP_SIMULATOR_LISP_H
