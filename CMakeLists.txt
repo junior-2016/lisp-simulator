@@ -8,6 +8,5 @@ set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${GCC_COVERAGE_COMPILE_FLAGS}")
 
-add_executable(lisp_simulator src/main.cpp src/include/lisp.cpp src/include/Util.h)
-target_include_directories(lisp_simulator PUBLIC
-        /src/include/)
+file(GLOB source_files "src/include/*.h" "src/include/*.cpp")
+add_executable(lisp_simulator src/main.cpp ${source_files})

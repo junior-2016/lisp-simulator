@@ -6,6 +6,7 @@
 #define LISP_SIMULATOR_IO_H
 
 #include "lisp.h"
+#include "util.h"
 
 namespace lisp {
 
