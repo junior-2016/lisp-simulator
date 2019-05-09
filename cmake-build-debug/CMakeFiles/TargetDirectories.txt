@@ -1,3 +1,0 @@
-/home/junior/project/programming_language/lisp-simulator/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/junior/project/programming_language/lisp-simulator/cmake-build-debug/CMakeFiles/lisp_simulator.dir
-/home/junior/project/programming_language/lisp-simulator/cmake-build-debug/CMakeFiles/edit_cache.dir
