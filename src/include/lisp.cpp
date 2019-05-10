@@ -12,21 +12,21 @@
 
 namespace lisp {
     void man_help() {
-        printf("---------------- MAN DOC HELP ------------------\n");
+        standard_output("---------------- MAN DOC HELP ------------------\n");
 
     }
 
     void interpreter_mode() {
+        standard_output("------------------- Lisp simulator -------------------\n");
+        standard_output("type QUIT to quit simulator; type HELP to gain man doc.\n");
         string_t input;
         string_t source;
         size_t i = 0;
         size_t line_number = 0;
-        printf("------------------- Lisp simulator -------------------\n");
-        printf("type QUIT to quit simulator; type HELP to gain man doc.\n");
-        std::vector<char> check_source_paren; // 检查括号
+        std::vector<char_t > check_source_paren; // 检查括号
         while (true) {
             if (check_source_paren.empty()) {
-                printf("echo [%zu] > ", ++line_number);
+                standard_output("echo [%zu] > ", ++line_number);
             }
             std::getline(std::cin, input);
             if (input == "QUIT") break;
@@ -47,11 +47,11 @@ namespace lisp {
                 source += input.substr(0, i);
                 if (check_source_paren.empty()) {
                     if (source.empty()) {
-                        fprintf(stderr, "source input is empty.");
+                        error_output("The valid source input is empty.\n");
                     } else {
                         auto ast = parse(getTokenList(source));
                         if (ExceptionHandle::global_handle().hasException()) {
-                            std::cerr << ExceptionHandle::global_handle();
+                            error_output(ExceptionHandle::global_handle().to_string());
                         } else {
                             // evaluate
 

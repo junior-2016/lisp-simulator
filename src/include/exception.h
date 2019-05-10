@@ -56,13 +56,14 @@ namespace lisp {
             errors.push_back(ExceptionEntry{message, type});
         }
 
-        friend std::ostream &operator<<(std::ostream &out, const ExceptionHandle &handle) {
-            out << "\t ExceptionType \t ExceptionMessage \n";
-            for (auto &exception:handle.errors) {
-                out << "\t " << printExceptionType(exception.type) << " \t "
-                    << exception.message << " \n";
+        const char *to_string() const {
+            sstream_t ss;
+            ss << "\t ExceptionType \t ExceptionMessage \n";
+            for (auto &exception:errors) {
+                ss << "\t " << printExceptionType(exception.type) << " \t "
+                   << exception.message << " \n";
             }
-            return out;
+            return ss.str().c_str();
         }
 
         bool hasException() const {

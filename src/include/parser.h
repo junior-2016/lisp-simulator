@@ -23,11 +23,14 @@ namespace lisp {
         /**
          * 用多重嵌套链表实现 Ast.
          */
+    private:
 
+    public:
+        using ptr =  std::unique_ptr<Ast>;
     };
 
-    Ast parse(const std::vector<TokenRet> &tokenList) {
-        return Ast();
+    Ast::ptr parse(const std::vector<TokenRet> &tokenList) {
+        return nullptr;
     }
 }
 #endif //LISP_SIMULATOR_PARSER_H

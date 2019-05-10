@@ -20,7 +20,7 @@ namespace lisp {
      * [   *            Fun                              ]
      * [   /            Fun                              ]
      * [   %            Fun                              ]
-     * 其他的还有: > < >= <= == !=
+     * 其他的还有: > < >= <= == != && || ! & | ^ 等
      */
     class symbol_table {
 
@@ -34,9 +34,12 @@ namespace lisp {
 
         symbol_table(const symbol_table &) = delete;
 
+        const char *to_string() const {
+            return nullptr;
+        }
+
     private:
         symbol_table() = default;
-
     };
 }
 

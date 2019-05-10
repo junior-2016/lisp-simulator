@@ -10,13 +10,15 @@
 namespace lisp {
     // 使用C++的常量名称空间,这样表示"string"s常量是std::string而不是const char*
     using namespace std::literals;
+    using namespace std::chrono_literals;
 
     using string_t = std::string;
     using string_ptr = std::unique_ptr<string_t>;
+
+    using char_t = char;
     using int_t = int32_t;
     using float_t = float;
     using double_t = double;
-
 #ifdef USE_INT_AS_NUMBER
     using number_t = int_t;
 #elif defined USE_DOUBLE_AS_NUMBER
@@ -25,12 +27,13 @@ namespace lisp {
     using number_t = float_t;
 #endif
 
-    using char_t = char;
+    using sstream_t = std::stringstream;
     using istream_t = std::istream;
     using ostream_t = std::ostream;
     using ifstream_t = std::ifstream;
     using ofstream_t = std::ofstream;
 
+    /*
     using bool_t = struct bool_t {
         bool value;
 
@@ -45,7 +48,7 @@ namespace lisp {
             out << std::boolalpha << a.value;
             return out;
         }
-    };
+    };*/
 
     template<typename T, typename ...Args>
     std::enable_if_t<!std::is_array<T>::value, std::unique_ptr<T>>
@@ -55,7 +58,8 @@ namespace lisp {
 
 /**
  * 创建大小为size的数组类型的unique_ptr.
- * 这里要求数组类型 T = type[] ,即维度 std::extent<T> = std::extent<type[]> 为 0,即空数组.
+ * 这里要求数组类型 T = type[], 此时维度 std::extent<T> = std::extent<type[]> 为 0,即空数组.
+ * eg: decltype(auto) ptr = make_ptr<int[]>(4);
  */
     template<typename T>
     std::enable_if_t<std::is_array<T>::value && std::extent<T>::value == 0,
@@ -117,12 +121,7 @@ namespace lisp {
             std::cout << std::boolalpha << is_number("abc+12") << "\n";
 
             decltype(auto) string_ptr = make_ptr<string_t>("hello world"s);
-            decltype(auto) bool_ptr = make_ptr<bool_t[]>(4);
-            bool_ptr[0] = true;
             std::cout << (*string_ptr) << "\n";
-            for (size_t i = 0; i < 4; i++) {
-                std::cout << bool_ptr[i] << "\n";
-            }
         }
     }
 }
