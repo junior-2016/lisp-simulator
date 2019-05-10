@@ -14,17 +14,44 @@ namespace lisp {
     }
 
     void interpreter_mode() {
-        string_t string;
+        string_t input;
+        string_t source;
+        size_t i = 0;
         size_t line_number = 0;
         printf("------------------- Lisp simulator -------------------\n");
         printf("type QUIT to quit simulator; type HELP to gain man doc.\n");
+        std::vector<char> check_source_paren; // 检查括号
         while (true) {
-            printf("echo [%zu] > ", ++line_number);
-            std::getline(std::cin, string);
-            if (string == "QUIT") break;
-            else if (string == "HELP") man_help();
+            if (check_source_paren.empty()) {
+                printf("echo [%zu] > ", ++line_number);
+            }
+            std::getline(std::cin, input);
+            if (input == "QUIT") break;
+            else if (input == "HELP") man_help();
             else {
-                // 进入 scanner => parser 阶段.
+                for (i = 0; i < input.size(); i++) {
+                    if (input[i] == '(') check_source_paren.push_back(input[i]);
+                    if (input[i] == ')') {
+                        if (!check_source_paren.empty()) {
+                            check_source_paren.pop_back();
+                            if (check_source_paren.empty()) {
+                                i++; // 保留最后一个 ')'
+                                break;// 这里只提取圆括号合法的首行. 如果输入(define x 1)(define y 1)只提取(define x 1)
+                            }
+                        } else break;
+                    }
+                }
+                source += input.substr(0, i);
+                if (check_source_paren.empty()) {
+                    if (source.empty()) {
+                        fprintf(stderr, "source input is empty.");
+                    } else {
+                        // scanner => parser => evaluate
+                        auto vec = getTokenList(source);
+                        parse(vec);
+                    }
+                    source = "";
+                }
             }
         }
     }

@@ -14,12 +14,23 @@ namespace lisp {
     using string_t = std::string;
     using string_ptr = std::unique_ptr<string_t>;
     using int_t = int32_t;
+    using float_t = float;
     using double_t = double;
+
+#ifdef USE_INT_AS_NUMBER
+    using number_t = int_t;
+#elif defined USE_DOUBLE_AS_NUMBER
+    using number_t = double_t;
+#elif defined USE_FLOAT_AS_NUMBER
+    using number_t = float_t;
+#endif
+
     using char_t = char;
     using istream_t = std::istream;
     using ostream_t = std::ostream;
     using ifstream_t = std::ifstream;
     using ofstream_t = std::ofstream;
+
     using bool_t = struct bool_t {
         bool value;
 
@@ -42,10 +53,10 @@ namespace lisp {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
-    /**
-     * 创建大小为size的数组类型的unique_ptr.
-     * 这里要求数组类型 T = type[] ,即维度 std::extent<T> = std::extent<type[]> 为 0,即空数组.
-     */
+/**
+ * 创建大小为size的数组类型的unique_ptr.
+ * 这里要求数组类型 T = type[] ,即维度 std::extent<T> = std::extent<type[]> 为 0,即空数组.
+ */
     template<typename T>
     std::enable_if_t<std::is_array<T>::value && std::extent<T>::value == 0,
             std::unique_ptr<T>>
@@ -53,8 +64,58 @@ namespace lisp {
         return std::make_unique<T>(size);
     }
 
+/**
+ * 用正则表达式判断字符串是否为数值.
+ */
+    bool is_number(const string_t &string) {
+        std::regex regex(R"([+-]?((([0-9]*[.])?[0-9]+)|(([0-9]+[.])?[0-9]*)))");
+        return std::regex_match(string, regex) && !string.empty();
+    }
+
+    bool is_integer(const string_t &string) {
+        std::regex regex(R"([+-]?(0|[1-9]+))");
+        return std::regex_match(string, regex) && !string.empty();
+    }
+
+    template<typename T>
+    T get_number(const string_t &string);
+
+    template<>
+    int_t get_number(const string_t &string) {
+        return std::stoi(string);
+    }
+
+    template<>
+    double_t get_number(const string_t &string) {
+        return std::stod(string);
+    }
+
+    template<>
+    float_t get_number(const string_t &string) {
+        return std::stof(string);
+    }
+
     namespace UtilTestCase {
         void test() {
+            std::cout << std::boolalpha << is_number("0.3") << "\n";
+            std::cout << std::boolalpha << is_number("0.") << "\n";
+            std::cout << std::boolalpha << is_number(".3") << "\n";
+            std::cout << std::boolalpha << is_number("+0.3") << "\n";
+            std::cout << std::boolalpha << is_number("-0.3") << "\n";
+            std::cout << std::boolalpha << is_number("+3.") << "\n";
+            std::cout << std::boolalpha << is_number("-3.") << "\n";
+            std::cout << std::boolalpha << is_number("+.0") << "\n";
+            std::cout << std::boolalpha << is_number("-.0") << "\n";
+
+            std::cout << std::boolalpha << is_number("+3") << "\n";
+            std::cout << std::boolalpha << is_number("-2") << "\n";
+            std::cout << std::boolalpha << is_number("2") << "\n";
+
+            std::cout << std::boolalpha << is_number(".") << "\n";
+            std::cout << std::boolalpha << is_number("") << "\n";
+            std::cout << std::boolalpha << is_number("++0.23") << "\n";
+            std::cout << std::boolalpha << is_number("abc+12") << "\n";
+
             decltype(auto) string_ptr = make_ptr<string_t>("hello world"s);
             decltype(auto) bool_ptr = make_ptr<bool_t[]>(4);
             bool_ptr[0] = true;
