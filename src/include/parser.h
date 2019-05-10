@@ -1,3 +1,5 @@
+#include <utility>
+
 //
 // Created by junior on 19-5-10.
 //
@@ -17,9 +19,15 @@ namespace lisp {
      * 又比如: 已经写 (define add 5), 如果再写 (define add 4) 就会报 variable add unbound 错误.
      * 并且注意到 lisp 的 variable 是不允许 unbound 的,即每一个 ID 只能绑定一个数值/function,并且绑定后不能再修改.
      */
+    class Ast {
+        /**
+         * 用多重嵌套链表实现 Ast.
+         */
 
-    void parse(const std::vector<TokenRet> &tokenList) {
+    };
 
+    Ast parse(const std::vector<TokenRet> &tokenList) {
+        return Ast();
     }
 }
 #endif //LISP_SIMULATOR_PARSER_H

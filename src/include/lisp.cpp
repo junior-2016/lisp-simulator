@@ -6,6 +6,9 @@
 #include "io_tool.h"
 #include "scanner.h"
 #include "parser.h"
+#include "evaluate.h"
+#include "compile.h"
+#include "exception.h"
 
 namespace lisp {
     void man_help() {
@@ -35,7 +38,7 @@ namespace lisp {
                         if (!check_source_paren.empty()) {
                             check_source_paren.pop_back();
                             if (check_source_paren.empty()) {
-                                i++; // 保留最后一个 ')'
+                                i++;  // 保留最后一个 ')'
                                 break;// 这里只提取圆括号合法的首行. 如果输入(define x 1)(define y 1)只提取(define x 1)
                             }
                         } else break;
@@ -46,9 +49,13 @@ namespace lisp {
                     if (source.empty()) {
                         fprintf(stderr, "source input is empty.");
                     } else {
-                        // scanner => parser => evaluate
-                        auto vec = getTokenList(source);
-                        parse(vec);
+                        auto ast = parse(getTokenList(source));
+                        if (ExceptionHandle::global_handle().hasException()) {
+                            std::cerr << ExceptionHandle::global_handle();
+                        } else {
+                            // evaluate
+
+                        }
                     }
                     source = "";
                 }

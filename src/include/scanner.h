@@ -14,7 +14,6 @@ namespace lisp {
         std::vector<TokenRet> tokenList;
         boost::replace_all(source, "(", " ( ");
         boost::replace_all(source, ")", " ) ");
-        std::cout << source;
         std::regex rgx("\\s+");
         std::sregex_token_iterator iter(source.begin(), source.end(), rgx, -1);
         std::sregex_token_iterator end;

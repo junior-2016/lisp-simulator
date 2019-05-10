@@ -26,12 +26,15 @@ namespace lisp {
 
     public:
         symbol_table &global_table() {
-
+            static symbol_table table;
+            return table;
         }
-        symbol_table &operator=(const symbol_table &) = delete;
+
+        void operator=(const symbol_table &) = delete;
+
         symbol_table(const symbol_table &) = delete;
+
     private:
-        static symbol_table table;
         symbol_table() = default;
 
     };
