@@ -10,6 +10,14 @@
 #include "token.h"
 
 namespace lisp {
+    inline void addToTokenList(const string_t &string, std::vector<TokenRet> &tokenList) {
+        if (is_number(string)) {
+            tokenList.push_back({getTokenByString(string, true), get_number<number_t>(string)});
+        } else {
+            tokenList.push_back({getTokenByString(string, false), make_ptr<string_t>(string)});
+        }
+    }
+
     decltype(auto) getTokenList(string_t source) {
         std::vector<TokenRet> tokenList;
         boost::replace_all(source, "(", " ( ");
@@ -17,31 +25,13 @@ namespace lisp {
         std::regex rgx("\\s+");
         std::sregex_token_iterator iter(source.begin(), source.end(), rgx, -1);
         std::sregex_token_iterator end;
-        Token token;
-        number_t value;
-        for (; iter != end; ++iter) {
-            if (*iter == "define") {
-                token = Token::DEFINE;
-            } else if (*iter == "lambda") {
-                token = Token::LAMBDA;
-            } else if (*iter == "eq?") {
-                token = Token::EQ;
-            } else if (*iter == "cond") {
-                token = Token::COND;
-            } else if (*iter == "(") {
-                token = Token::LPAREN;
-            } else if (*iter == ")") {
-                token = Token::RPAREN;
-            } else if (is_number(*iter)) {
-                token = Token::NUMBER;
-                value = get_number<number_t>(*iter);
-            } else {
-                token = Token::ATOM;
-            }
-            if (token != Token::NUMBER) {
-                tokenList.push_back({token, make_ptr<string_t>(*iter)});
-            } else {
-                tokenList.push_back({token, value});
+        if (*iter != "(") {
+            // 如果开始的第一个token不是"("的话,只能将第一个token作为scanner的结果.
+            // (当代码是想单独输出一个variable时需要这样处理)
+            addToTokenList(*iter, tokenList);
+        } else {
+            for (; iter != end; ++iter) {
+                addToTokenList(*iter, tokenList);
             }
         }
         return tokenList;

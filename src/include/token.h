@@ -26,5 +26,25 @@ namespace lisp {
         Token token = Token::ATOM;
         std::variant<number_t, string_ptr> value;
     };
+
+    Token getTokenByString(const string_t &string, bool is_number) {
+        if (string == "define") {
+            return Token::DEFINE;
+        } else if (string == "lambda") {
+            return Token::LAMBDA;
+        } else if (string == "eq?") {
+            return Token::EQ;
+        } else if (string == "cond") {
+            return Token::COND;
+        } else if (string == "(") {
+            return Token::LPAREN;
+        } else if (string == ")") {
+            return Token::RPAREN;
+        } else if (is_number) {
+            return Token::NUMBER;
+        } else {
+            return Token::ATOM;
+        }
+    }
 }
 #endif //LISP_SIMULATOR_TOKEN_H
