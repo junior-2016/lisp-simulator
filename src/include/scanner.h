@@ -10,16 +10,17 @@
 #include "token.h"
 
 namespace lisp {
-    inline void addToTokenList(const string_t &string, std::vector<TokenRet> &tokenList) {
-        if (is_number(string)) {
-            tokenList.push_back({getTokenByString(string, true), get_number<number_t>(string)});
+    inline void addToTokenList(const string_t &string, std::vector<Token> &tokenList) {
+        TokenType type = getTokenByString(string);
+        if (type == TokenType::NUMBER) {
+            tokenList.push_back({type, get_number<number_t>(string)});
         } else {
-            tokenList.push_back({getTokenByString(string, false), make_ptr<string_t>(string)});
+            tokenList.push_back({type, make_ptr<string_t>(string)});
         }
     }
 
     decltype(auto) getTokenList(string_t source) {
-        std::vector<TokenRet> tokenList;
+        std::vector<Token> tokenList;
         boost::replace_all(source, "(", " ( ");
         boost::replace_all(source, ")", " ) ");
         std::regex rgx("\\s+");

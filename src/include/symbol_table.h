@@ -20,7 +20,11 @@ namespace lisp {
      * [   *            Fun                              ]
      * [   /            Fun                              ]
      * [   %            Fun                              ]
-     * 其他的还有: > < >= <= == != && || ! & | ^ 等
+     * 其他的还有: 操作符函数  > < >= <= == != && || ! & | ^
+     *            逻辑函数    eq? cond
+     *            控制流逻辑  if (test) (then_expr) (else_expr), while ....
+     *            数学函数    sin cos tan atan ....
+     *
      */
     class symbol_table {
 

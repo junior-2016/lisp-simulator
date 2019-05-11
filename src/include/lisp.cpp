@@ -49,7 +49,7 @@ namespace lisp {
                     if (source.empty()) {
                         error_output("The valid source input is empty.\n");
                     } else {
-                        auto ast = parse(getTokenList(source));
+                        auto ast = parse(source);
                         if (ExceptionHandle::global_handle().hasException()) {
                             error_output(ExceptionHandle::global_handle().to_string());
                         } else {
