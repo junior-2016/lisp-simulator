@@ -12,13 +12,13 @@
 
 namespace lisp {
     void man_help() {
-        standard_output("---------------- MAN DOC HELP ------------------\n");
+        standard_output("%s\n", "---------------- MAN DOC HELP ------------------");
 
     }
 
     void interpreter_mode() {
-        standard_output("------------------- Lisp simulator -------------------\n");
-        standard_output("type QUIT to quit simulator; type HELP to gain man doc.\n");
+        standard_output("%s\n", "------------------- Lisp simulator -------------------");
+        standard_output("%s\n", "type QUIT to quit simulator; type HELP to gain man doc.");
         string_t input;
         string_t source;
         size_t i = 0;
@@ -47,11 +47,11 @@ namespace lisp {
                 source += input.substr(0, i);
                 if (check_source_paren.empty()) {
                     if (source.empty()) {
-                        error_output("The valid source input is empty.\n");
+                        error_output("%s\n", "The valid source input is empty.");
                     } else {
                         auto ast = parse(source);
                         if (ExceptionHandle::global_handle().hasException()) {
-                            error_output(ExceptionHandle::global_handle().to_string());
+                            error_output("%s\n", ExceptionHandle::global_handle().to_string());
                         } else {
                             // evaluate
 
