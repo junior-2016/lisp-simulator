@@ -29,6 +29,5 @@ namespace lisp {
     void standard_output(const char *fmt, Args &&... args) noexcept {
         output(STDOUT, fmt, args...);
     }
-
 }
 #endif //LISP_SIMULATOR_IO_H

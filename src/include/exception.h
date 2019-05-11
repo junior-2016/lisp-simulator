@@ -12,31 +12,20 @@ namespace lisp {
     /**
      * 全局异常收集
      */
-
     enum class ExceptionType {
         SYNTAX_ERROR,
         SEMANTIC_ERROR
     };
 
-    string_t printExceptionType(ExceptionType type) {
-        switch (type) {
-            case ExceptionType::SYNTAX_ERROR :
-                return "SYNTAX_ERROR";
-            case ExceptionType::SEMANTIC_ERROR:
-                return "SEMANTIC_ERROR";
-            default:
-                return "Unknown_Error";
-        }
-    }
-
-    struct ExceptionEntry {
-        string_t message;
-        ExceptionType type;
-    };
+    string_t printExceptionType(ExceptionType type);
 
     // 使用单例模式
     class ExceptionHandle {
     private:
+        struct ExceptionEntry {
+            string_t message;
+            ExceptionType type;
+        };
         std::vector<ExceptionEntry> errors;
 
         ExceptionHandle() = default;

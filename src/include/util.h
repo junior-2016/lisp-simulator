@@ -33,23 +33,6 @@ namespace lisp {
     using ifstream_t = std::ifstream;
     using ofstream_t = std::ofstream;
 
-    /*
-    using bool_t = struct bool_t {
-        bool value;
-
-        bool_t &operator=(const bool &v) {
-            this->value = v;
-            return *this;
-        }
-
-        bool_t &operator=(const bool_t &b) = default;
-
-        friend ostream_t &operator<<(ostream_t &out, bool_t &a) {
-            out << std::boolalpha << a.value;
-            return out;
-        }
-    };*/
-
     template<typename T, typename ...Args>
     std::enable_if_t<!std::is_array<T>::value, std::unique_ptr<T>>
     make_ptr(Args &&... args) {
@@ -71,59 +54,26 @@ namespace lisp {
 /**
  * 用正则表达式判断字符串是否为数值.
  */
-    bool is_number(const string_t &string) {
-        std::regex regex(R"([+-]?((([0-9]*[.])?[0-9]+)|(([0-9]+[.])?[0-9]*)))");
-        return std::regex_match(string, regex) && !string.empty();
-    }
+    bool is_number(const string_t &string);
 
-    bool is_integer(const string_t &string) {
-        std::regex regex(R"([+-]?(0|[1-9]+))");
-        return std::regex_match(string, regex) && !string.empty();
-    }
+    bool is_integer(const string_t &string);
 
     template<typename T>
     T get_number(const string_t &string);
 
     template<>
-    int_t get_number(const string_t &string) {
-        return std::stoi(string);
-    }
+    int_t get_number(const string_t &string) ;
 
     template<>
-    double_t get_number(const string_t &string) {
-        return std::stod(string);
-    }
+    double_t get_number(const string_t &string);
 
     template<>
-    float_t get_number(const string_t &string) {
-        return std::stof(string);
-    }
+    float_t get_number(const string_t &string);
 
     namespace UtilTestCase {
-        void test() {
-            std::cout << std::boolalpha << is_number("0.3") << "\n";
-            std::cout << std::boolalpha << is_number("0.") << "\n";
-            std::cout << std::boolalpha << is_number(".3") << "\n";
-            std::cout << std::boolalpha << is_number("+0.3") << "\n";
-            std::cout << std::boolalpha << is_number("-0.3") << "\n";
-            std::cout << std::boolalpha << is_number("+3.") << "\n";
-            std::cout << std::boolalpha << is_number("-3.") << "\n";
-            std::cout << std::boolalpha << is_number("+.0") << "\n";
-            std::cout << std::boolalpha << is_number("-.0") << "\n";
-
-            std::cout << std::boolalpha << is_number("+3") << "\n";
-            std::cout << std::boolalpha << is_number("-2") << "\n";
-            std::cout << std::boolalpha << is_number("2") << "\n";
-
-            std::cout << std::boolalpha << is_number(".") << "\n";
-            std::cout << std::boolalpha << is_number("") << "\n";
-            std::cout << std::boolalpha << is_number("++0.23") << "\n";
-            std::cout << std::boolalpha << is_number("abc+12") << "\n";
-
-            decltype(auto) string_ptr = make_ptr<string_t>("hello world"s);
-            std::cout << (*string_ptr) << "\n";
-        }
+        void test();
     }
+
 }
 
 #endif //LISP_SIMULATOR_UTIL_H

@@ -17,10 +17,10 @@ namespace lisp {
      * 又比如: 已经写 (define add 5), 如果再写 (define add 4) 就会报 variable add unbound 错误.
      * 并且注意到 lisp 的 variable 是不允许 unbound 的,即每一个 ID 只能绑定一个数值/function,并且绑定后不能再修改.
      */
-     /**
-      * 如果解析像 () 这样的空表达式, 生成的Ast是nullptr, 那么 evaluate 解析返回 "nil".
-      * evaluate的时候要注意 => 有一些 ast::ptr 是 nullptr, 要跳过.
-      */
+    /**
+     * 如果解析像 () 这样的空表达式, 生成的Ast是nullptr, 那么 evaluate 解析返回 "nil".
+     * evaluate的时候要注意 => 有一些 ast::ptr 是 nullptr, 要跳过.
+     */
 
     /**
      * 非csp的evaluator

@@ -2,13 +2,13 @@
 // Created by junior on 19-5-9.
 //
 #include "lisp.h"
-#include "util.h"
 #include "io_tool.h"
+#include "util.h"
+#include "exception.h"
 #include "scanner.h"
 #include "parser.h"
 #include "evaluate.h"
 #include "compile.h"
-#include "exception.h"
 
 namespace lisp {
     void man_help() {
@@ -23,7 +23,7 @@ namespace lisp {
         string_t source;
         size_t i = 0;
         size_t line_number = 0;
-        std::vector<char_t > check_source_paren; // 检查括号
+        std::vector<char_t> check_source_paren; // 检查括号
         while (true) {
             if (check_source_paren.empty()) {
                 standard_output("echo [%zu] > ", ++line_number);

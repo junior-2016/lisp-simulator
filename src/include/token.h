@@ -6,6 +6,7 @@
 #define LISP_SIMULATOR_TOKEN_H
 
 #include "lisp.h"
+#include "util.h"
 
 namespace lisp {
     enum class TokenType {
@@ -16,33 +17,17 @@ namespace lisp {
 
         DEFINE,  // "define"
         LAMBDA,  // "lambda"
-
-        // EQ COND 下放到 symbol_table 预定义符号里
-        // EQ,      // "eq?"
-        // COND,    // "cond"
+        COND,    // "cond"
+        // EQ 下放到 symbol_table 预定义符号里
 
         ATOM     // 除了数值,左右括号以及几个核心关键字以外的其他字符串都是atom
     };
 
-    using Token = struct {
+    struct Token {
         TokenType type = TokenType::ATOM;
         std::variant<number_t, string_ptr> value;
     };
 
-    TokenType getTokenByString(const string_t &string) {
-        if (string == "define") {
-            return TokenType::DEFINE;
-        } else if (string == "lambda") {
-            return TokenType::LAMBDA;
-        } else if (string == "(") {
-            return TokenType::LPAREN;
-        } else if (string == ")") {
-            return TokenType::RPAREN;
-        } else if (is_number(string)) {
-            return TokenType::NUMBER;
-        } else {
-            return TokenType::ATOM;
-        }
-    }
+    TokenType getTokenByString(const string_t &string);
 }
 #endif //LISP_SIMULATOR_TOKEN_H
