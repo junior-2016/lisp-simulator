@@ -39,6 +39,7 @@
 
 // Boost include
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 // Self include
 #include "config.h"

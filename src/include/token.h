@@ -10,17 +10,17 @@
 
 namespace lisp {
     enum class TokenType {
-        NUMBER, // 数值,支持整数模式或者浮点数模式
+        NUMBER = 'N', // 数值,支持整数模式或者浮点数模式
 
-        LPAREN, // 左括号
-        RPAREN, // 右括号
+        LPAREN = '(', // 左括号
+        RPAREN = ')', // 右括号
 
-        DEFINE,  // "define"
-        LAMBDA,  // "lambda"
-        COND,    // "cond"
+        DEFINE = 'D',  // "define"
+        LAMBDA = 'L',  // "lambda"
+        COND   = 'C',  // "cond"
         // EQ 下放到 symbol_table 预定义符号里
 
-        ATOM     // 除了数值,左右括号以及几个核心关键字以外的其他字符串都是atom
+        ATOM   ='A'    // 除了数值,左右括号以及几个核心关键字以外的其他字符串都是atom
     };
 
     struct Token {

@@ -5,7 +5,7 @@
 
 namespace lisp {
     bool is_number(const string_t &string) {
-        std::regex regex(R"([+-]?((([0-9]*[.])?[0-9]+)|(([0-9]+[.])?[0-9]*)))");
+        std::regex regex(R"([+-]?((([0-9]*[.])?[0-9]+)|(([0-9]+[.])[0-9]*)))");
         return std::regex_match(string, regex) && !string.empty();
     }
 
@@ -31,6 +31,7 @@ namespace lisp {
 
     namespace UtilTestCase {
         void test() {
+            // 正确的数值表示
             std::cout << std::boolalpha << is_number("0.3") << "\n";
             std::cout << std::boolalpha << is_number("0.") << "\n";
             std::cout << std::boolalpha << is_number(".3") << "\n";
@@ -40,12 +41,14 @@ namespace lisp {
             std::cout << std::boolalpha << is_number("-3.") << "\n";
             std::cout << std::boolalpha << is_number("+.0") << "\n";
             std::cout << std::boolalpha << is_number("-.0") << "\n";
-
             std::cout << std::boolalpha << is_number("+3") << "\n";
             std::cout << std::boolalpha << is_number("-2") << "\n";
             std::cout << std::boolalpha << is_number("2") << "\n";
 
+            // 错误的数值表示
             std::cout << std::boolalpha << is_number(".") << "\n";
+            std::cout << std::boolalpha << is_number("+") << "\n";
+            std::cout << std::boolalpha << is_number("-") << "\n";
             std::cout << std::boolalpha << is_number("") << "\n";
             std::cout << std::boolalpha << is_number("++0.23") << "\n";
             std::cout << std::boolalpha << is_number("abc+12") << "\n";

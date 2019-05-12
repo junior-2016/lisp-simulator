@@ -1,5 +1,3 @@
-#include <utility>
-
 //
 // Created by junior on 19-5-10.
 //
@@ -10,6 +8,8 @@
 #include "lisp.h"
 #include "util.h"
 #include "token.h"
+#include "scanner.h"
+#include "exception.h"
 
 namespace lisp {
 
@@ -29,8 +29,8 @@ namespace lisp {
             }
         }
 
-        const char *to_string() const {
-            return nullptr;
+        string_t to_string() const {
+            return "";
         }
     };
 

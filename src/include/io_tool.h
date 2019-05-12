@@ -6,12 +6,12 @@
 #define LISP_SIMULATOR_IO_H
 
 #include "lisp.h"
-#include "util.h"
 
 namespace lisp {
     template<typename ... Args>
     void output(FILE *file, const char *fmt, Args &&... args) noexcept {
         if (file == STDERR) {
+            std::this_thread::sleep_for(DELAY_FOR_ERROR_OUTPUT);
             std::fprintf(file, fmt, std::forward<Args>(args)...);
             std::this_thread::sleep_for(DELAY_FOR_ERROR_OUTPUT);
             // 因为错误输出和程序运行存在延时,所以这里将程序运行阻塞.

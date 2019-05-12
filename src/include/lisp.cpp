@@ -2,8 +2,8 @@
 // Created by junior on 19-5-9.
 //
 #include "lisp.h"
-#include "io_tool.h"
 #include "util.h"
+#include "io_tool.h"
 #include "exception.h"
 #include "scanner.h"
 #include "parser.h"
@@ -51,13 +51,15 @@ namespace lisp {
                     } else {
                         auto ast = parse(source);
                         if (ExceptionHandle::global_handle().hasException()) {
-                            error_output("%s\n", ExceptionHandle::global_handle().to_string());
+                            auto message = ExceptionHandle::global_handle().to_string();
+                            error_output("%s", message.c_str());
                         } else {
                             // evaluate
 
                         }
                     }
                     source = "";
+                    ExceptionHandle::global_handle().clearException(); // 最后一步很重要...
                 }
             }
         }
@@ -70,7 +72,17 @@ namespace lisp {
         }
     }
 
+    /**
+     * 存在 DEBUG 宏定义时才进行测试
+     */
+    void test_all() {
+        UtilTestCase::test();
+    }
+
     void main(int argc, char **argv) {
+#ifdef DEBUG
+        test_all();
+#endif
         if (argc <= 1) { // 没有多余的命令行参数,进入解释器模式
             interpreter_mode();
         } else { // 如果有其他命令行参数,进入编译模式,尝试将命令行参数解读为源文件并编译

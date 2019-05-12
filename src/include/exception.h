@@ -45,18 +45,21 @@ namespace lisp {
             errors.push_back(ExceptionEntry{message, type});
         }
 
-        const char *to_string() const {
-            sstream_t ss;
-            ss << "\t ExceptionType \t ExceptionMessage \n";
+        string_t to_string() const {
+            string_t string = "\t ExceptionType \t ExceptionMessage \n";
             for (auto &exception:errors) {
-                ss << "\t " << printExceptionType(exception.type) << " \t "
-                   << exception.message << " \n";
+                string += ("\t " + printExceptionType(exception.type) + " \t "
+                           + exception.message) + " \n";
             }
-            return ss.str().c_str();
+            return string;
         }
 
         bool hasException() const {
             return !errors.empty();
+        }
+
+        void clearException() {
+            errors.clear();
         }
     };
 }

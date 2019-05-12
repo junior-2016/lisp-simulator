@@ -15,8 +15,9 @@ namespace lisp {
 
     std::vector<Token> getTokenList(string_t source) {
         std::vector<Token> tokenList;
-        boost::replace_all(source, "(", " ( ");
-        boost::replace_all(source, ")", " ) ");
+        boost::replace_all(source, "(", " ( "); // 区分开 (
+        boost::replace_all(source, ")", " ) "); // 区分开 )
+        boost::algorithm::trim(source); // 注意最后去掉字符串前后的空格,否则后面分割token会出错
         std::regex rgx("\\s+");
         std::sregex_token_iterator iter(source.begin(), source.end(), rgx, -1);
         std::sregex_token_iterator end;
