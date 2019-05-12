@@ -23,7 +23,10 @@ namespace lisp {
         explicit Ast(Token token) : token(std::move(token)) {}
 
         void add_child(Ast::ptr ptr) {
-            children.push_back(std::move(ptr));
+            // 这里确保添加的 child 不会是一个 nullptr.
+            if (ptr != nullptr) {
+                children.push_back(std::move(ptr));
+            }
         }
 
         const char *to_string() const {
