@@ -10,8 +10,6 @@ namespace lisp {
             return TokenType::DEFINE;
         } else if (string == "lambda") {
             return TokenType::LAMBDA;
-        } else if (string == "cond") {
-            return TokenType::COND;
         } else if (string == "(") {
             return TokenType::LPAREN;
         } else if (string == ")") {

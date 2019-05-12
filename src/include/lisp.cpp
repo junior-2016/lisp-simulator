@@ -8,7 +8,6 @@
 #include "scanner.h"
 #include "parser.h"
 #include "evaluate.h"
-#include "compile.h"
 
 namespace lisp {
     void man_help() {
@@ -16,7 +15,19 @@ namespace lisp {
 
     }
 
-    void interpreter_mode() {
+    void process_option(int argc, char **argv) {
+        if (argc <= 1) {
+            return;
+        } else {
+            for (auto i = 1; i < argc; i++) {
+
+            }
+        }
+    }
+
+    void interpreter_mode(int argc, char **argv) {
+        process_option(argc, argv);
+
         standard_output("%s\n", "------------------- Lisp simulator -------------------");
         standard_output("%s\n", "type QUIT to quit simulator; type HELP to gain man doc.");
         string_t input;
@@ -49,7 +60,11 @@ namespace lisp {
                     if (source.empty()) {
                         error_output("%s\n", "The valid source input is empty.");
                     } else {
-                        auto ast = parse(source);
+                        auto root = parse(source);
+                        if (PRINT_AST) {
+                            auto ast_str = Ast::getAstRepresentation(std::move(root));
+                            standard_output("%s", ast_str.c_str());
+                        }
                         if (ExceptionHandle::global_handle().hasException()) {
                             auto message = ExceptionHandle::global_handle().to_string();
                             error_output("%s", message.c_str());
@@ -65,13 +80,6 @@ namespace lisp {
         }
     }
 
-    void compile_mode(int argc, char **argv) {
-        for (auto i = 1; i < argc; i++) {
-            string_ptr file_name = make_ptr<string_t>(argv[i]);
-
-        }
-    }
-
     /**
      * 存在 DEBUG 宏定义时才进行测试
      */
@@ -83,10 +91,7 @@ namespace lisp {
 #ifdef DEBUG
         test_all();
 #endif
-        if (argc <= 1) { // 没有多余的命令行参数,进入解释器模式
-            interpreter_mode();
-        } else { // 如果有其他命令行参数,进入编译模式,尝试将命令行参数解读为源文件并编译
-            compile_mode(argc, argv);
-        }
+        interpreter_mode(int
+        argc, char * *argv);
     }
 }

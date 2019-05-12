@@ -15,5 +15,6 @@ namespace lisp {
 #define STDOUT stdout
 #define STDERR stderr
 
+#define PRINT_AST true
 }
 #endif //LISP_SIMULATOR_CONFIG_H

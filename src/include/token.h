@@ -17,7 +17,7 @@ namespace lisp {
 
         DEFINE = 'D',  // "define"
         LAMBDA = 'L',  // "lambda"
-        COND   = 'C',  // "cond"
+        // COND   = 'C',  // "cond"
         // EQ 下放到 symbol_table 预定义符号里
 
         ATOM   ='A'    // 除了数值,左右括号以及几个核心关键字以外的其他字符串都是atom

@@ -7,8 +7,6 @@
 
 #include "lisp.h"
 #include "util.h"
-#include "parser.h"
-#include "symbol_table.h"
 
 namespace lisp {
     /**
