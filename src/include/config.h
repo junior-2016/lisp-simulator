@@ -6,7 +6,6 @@
 #define LISP_SIMULATOR_CONFIG_H
 
 namespace lisp {
-
 #define USE_DOUBLE_AS_NUMBER
 
 #define DELAY_FOR_ERROR_OUTPUT 0.3s

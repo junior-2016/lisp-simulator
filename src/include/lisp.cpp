@@ -15,19 +15,7 @@ namespace lisp {
 
     }
 
-    void process_option(int argc, char **argv) {
-        if (argc <= 1) {
-            return;
-        } else {
-            for (auto i = 1; i < argc; i++) {
-
-            }
-        }
-    }
-
-    void interpreter_mode(int argc, char **argv) {
-        process_option(argc, argv);
-
+    void interpreter_mode() {
         standard_output("%s\n", "------------------- Lisp simulator -------------------");
         standard_output("%s\n", "type QUIT to quit simulator; type HELP to gain man doc.");
         string_t input;
@@ -62,7 +50,7 @@ namespace lisp {
                     } else {
                         auto root = parse(source);
                         if (PRINT_AST) {
-                            auto ast_str = Ast::getAstRepresentation(std::move(root));
+                            auto ast_str = Ast::to_string(std::move(root));
                             standard_output("%s", ast_str.c_str());
                         }
                         if (ExceptionHandle::global_handle().hasException()) {
@@ -87,11 +75,10 @@ namespace lisp {
         UtilTestCase::test();
     }
 
-    void main(int argc, char **argv) {
+    void main() {
 #ifdef DEBUG
         test_all();
 #endif
-        interpreter_mode(int
-        argc, char * *argv);
+        interpreter_mode();
     }
 }

@@ -9,18 +9,12 @@
 #include "util.h"
 
 namespace lisp {
+    // define lambda cond 这些都放在 evaluate 处理..
     enum class TokenType {
         NUMBER = 'N', // 数值,支持整数模式或者浮点数模式
-
+        ATOM  = 'A',   // 除数值以外的其他原子
         LPAREN = '(', // 左括号
-        RPAREN = ')', // 右括号
-
-        DEFINE = 'D',  // "define"
-        LAMBDA = 'L',  // "lambda"
-        // COND   = 'C',  // "cond"
-        // EQ 下放到 symbol_table 预定义符号里
-
-        ATOM   ='A'    // 除了数值,左右括号以及几个核心关键字以外的其他字符串都是atom
+        RPAREN = ')'  // 右括号
     };
 
     struct Token {

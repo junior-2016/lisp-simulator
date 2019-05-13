@@ -46,6 +46,7 @@ namespace lisp {
      * V.operator(5,6) 内部调用 eval(this->body,Env(this->args_names,args,this->env))
      */
     class Procedure {
+        /*
     public:
         template<typename FunctionBody, typename FunctionArgs>
         Procedure(FunctionBody body, std::initializer_list<functionArgs> &args_names) {
@@ -60,6 +61,7 @@ namespace lisp {
         T operator()(Args &&... args) {
             eval(this->body, Env(this->args_names, args, this->env))
         }
+         */
     };
 }
 #endif //LISP_SIMULATOR_ENVIRONMENT_H

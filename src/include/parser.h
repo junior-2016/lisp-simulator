@@ -17,15 +17,21 @@ namespace lisp {
         using ptr = std::unique_ptr<Ast>;
     private:
         std::vector<Ast::ptr> children;
-        Token token;
+        std::unique_ptr<Token> token = nullptr;
     public:
-        Ast(Token token) : token(std::move(token)) {}
+        explicit Ast(std::unique_ptr<Token> token) : token(std::move(token)) {}
+
+        explicit Ast() = default;
 
         void add_child(Ast::ptr ptr) {
-            if (ptr != nullptr) {
+            if (ptr != nullptr) { // 确保添加的child不为空
                 children.push_back(std::move(ptr));
             }
         }
+
+        static string_t to_string(Ast::ptr ptr, int tab = 0);
     };
+
+    Ast::ptr parse(const string_t &source);
 }
 #endif //LISP_SIMULATOR_PARSER_H

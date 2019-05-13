@@ -13,30 +13,27 @@ namespace lisp {
 
     inline bool is_token_end() { return pos == end_pos; }
 
-    inline Token getNextToken() {
-        Token token = std::move(*pos);
-        ++pos;
-        return token;
-    }
+    inline void skip_token() { ++pos; }
 
     Ast::ptr traverseTokenList() {
         if (is_token_end()) {
             report_syntax_error("error");
             return nullptr;
         }
-        Token token = getNextToken();
-        switch (token.type) {
-            case TokenType::ATOM:
-            case TokenType::NUMBER:
-            case TokenType::DEFINE:
-            case TokenType::LAMBDA:
-                return make_ptr<Ast>(std::move(token));
-
-            case TokenType::LPAREN:
-
-                break;
-            default:
-                report_syntax_error("");
+        Token token = std::move(*pos);
+        skip_token();
+        if (token.type == TokenType::RPAREN) {
+            report_syntax_error("error");
+            return nullptr;
+        } else if (token.type == TokenType::LPAREN) {
+            Ast::ptr root = make_ptr<Ast>();
+            while ((*pos).type != TokenType::RPAREN) {
+                root->add_child(traverseTokenList());
+            }
+            skip_token();
+            return root;
+        } else {
+            return make_ptr<Ast>(make_ptr<Token>(std::move(token)));
         }
     }
 
@@ -45,5 +42,29 @@ namespace lisp {
         pos = tokenList.begin();
         end_pos = tokenList.end();
         return traverseTokenList();
+    }
+
+    string_t Ast::to_string(Ast::ptr ptr, int tab) {
+        string_t result;
+        for (int i = 0; i < tab; i++) {
+            result += "\t";
+        }
+        if (ptr->token != nullptr) {
+            if (ptr->token->type == TokenType::NUMBER) {
+                result += std::to_string(std::get<number_t>(ptr->token->value));
+            } else {
+                result += *std::get<string_ptr>(ptr->token->value);
+            }
+        } else {
+            result += "[\n";
+            for (auto &item : ptr->children) {
+                result += to_string(std::move(item), tab + 1);
+            }
+            for (int i = 0; i < tab; i++) {
+                result += "\t";
+            }
+            result += "]";
+        }
+        return result += "\n";
     }
 }

@@ -45,6 +45,6 @@
 #include "config.h"
 
 namespace lisp {
-    void main(int argc, char **argv);
+    void main();
 }
 #endif //LISP_SIMULATOR_LISP_H

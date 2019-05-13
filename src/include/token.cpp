@@ -6,11 +6,7 @@
 
 namespace lisp {
     TokenType getTokenByString(const string_t &string) {
-        if (string == "define") {
-            return TokenType::DEFINE;
-        } else if (string == "lambda") {
-            return TokenType::LAMBDA;
-        } else if (string == "(") {
+        if (string == "(") {
             return TokenType::LPAREN;
         } else if (string == ")") {
             return TokenType::RPAREN;
