@@ -7,6 +7,8 @@
 
 #include "lisp.h"
 #include "util.h"
+#include "parser.h"
+#include "environment.h"
 
 namespace lisp {
     /**
@@ -23,6 +25,9 @@ namespace lisp {
     /**
      * 非csp的evaluator
      */
+    void eval(Ast::ptr root, Env env) {
+
+    }
 
     /**
      * csp的evaluator

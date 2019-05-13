@@ -58,7 +58,7 @@ namespace lisp {
                             error_output("%s", message.c_str());
                         } else {
                             // evaluate
-
+                            eval(std::move(root), Env::global_env());
                         }
                     }
                     source = "";

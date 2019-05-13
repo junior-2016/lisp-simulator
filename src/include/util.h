@@ -11,6 +11,7 @@ namespace lisp {
     // 使用C++的常量名称空间,这样表示"string"s常量是std::string而不是const char*
     using namespace std::literals;
     using namespace std::chrono_literals;
+    using namespace std::placeholders;
 
     using string_t = std::string;
     using string_ptr = std::unique_ptr<string_t>;
@@ -62,7 +63,7 @@ namespace lisp {
     T get_number(const string_t &string);
 
     template<>
-    int_t get_number(const string_t &string) ;
+    int_t get_number(const string_t &string);
 
     template<>
     double_t get_number(const string_t &string);
