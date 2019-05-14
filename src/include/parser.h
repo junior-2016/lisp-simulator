@@ -12,13 +12,11 @@
 #include "exception.h"
 
 namespace lisp {
-    class Ast {
-    public:
+    struct Ast {
         using ptr = std::unique_ptr<Ast>;
-    private:
         std::vector<Ast::ptr> children;
         std::unique_ptr<Token> token = nullptr;
-    public:
+
         explicit Ast(std::unique_ptr<Token> token) : token(std::move(token)) {}
 
         explicit Ast() = default;

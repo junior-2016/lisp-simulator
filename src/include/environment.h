@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include <utility>
+
 //
 // Created by junior on 19-5-12.
 //
@@ -15,6 +17,8 @@
 #include "exception.h"
 
 namespace lisp {
+    // TODO: environment和evaluate的接口对错误处理统一用了semantic,
+    //  后面必须区分syntax和semantic,因为有一些是syntax的问题
 
     /**
      * 符号表预定义的Symbol(Atom)(注意这些Symbol已经预定义,所以不允许在代码中重新定义)
@@ -38,16 +42,6 @@ namespace lisp {
     inline void report_semantic_error(const string_t &string) {
         ExceptionHandle::global_handle().add_exception(ExceptionType::SEMANTIC_ERROR, string);
     }
-
-    enum class Type {
-        Null,   // 空值
-        Number, // 数值
-        Func,   // 函数
-        Boolean // 布尔值
-    };
-    enum class ArgType {
-
-    };
 
     struct Number { // 数值类型
         number_t number;
@@ -75,7 +69,11 @@ namespace lisp {
         }
     };
 
-    using Value = std::variant<nil, Number, Bool>;
+    // 前置声明Function, 使得Value可以包含Function.
+    // (由于Value需要包含Function,而Function又需要使用Value作为参数和返回值,所以这里的循环依赖需要通过前置声明来解决)
+    class Function;
+
+    using Value = std::variant<nil, Number, Bool, Function>;
 
     template<typename T>
     bool is_nil(T value) {
@@ -94,11 +92,16 @@ namespace lisp {
         return value.index() == 2;
     }
 
+    inline bool is_Value_Function(Value value) {
+        return value.index() == 3;
+    }
+
     // 判断两个Value是否同类型
     inline bool is_Value_same_type(Value a, Value b) {
         return (is_Value_Number(a) && is_Value_Number(b)) ||
                (is_Value_Bool(a) && is_Value_Bool(b)) ||
-               (is_Value_nil(a) && is_Value_nil(b));
+               (is_Value_nil(a) && is_Value_nil(b)) ||
+               (is_Value_Function(a) && is_Value_Function(b));
     }
 
     /**
@@ -120,25 +123,36 @@ namespace lisp {
         virtual ~Function() = default;
 
         // 默认的operator()直接执行内部持有的functional对象
-        virtual Value operator()(const std::vector<Value> &);
+        virtual Value operator()(const std::vector<Value> &args) {
+            return function(args);
+        }
+
+        // 提供一个输出函数类型信息的虚函数
+        virtual string_t to_string() const {
+            return "Function";
+        }
     };
 
-    Value Function::operator()(const std::vector<Value> &args) {
-        return function(args);
+    // 统一输出接口
+    string_t to_string(Value value) {
+        if (is_Value_Number(value)) {
+            return std::get<Number>(value).to_string();
+        } else if (is_Value_nil(value)) {
+            return std::get<nil>(value).to_string();
+        } else if (is_Value_Bool(value)) {
+            return std::get<Bool>(value).to_string();
+        } else {
+            return std::get<Function>(value).to_string();
+        }
     }
-
-    // using Function = std::function<Value(std::vector<Value> &)>; // 现在还有一个缺陷是参数的类型,是不是应该抽象出一个ArgType
-
-    struct EnvValue {
-        Type type; // TODO 这个Type可能需要简化为 Type::Func 和 Type::Value 两个就行, 剩下的靠Value.index()自己就可以判断了
-        std::variant<Value, Function> value;
-    };
 
     class Env {
     public:
-        using handle =  std::unique_ptr<Env>;
+        // Env::handle应该用shared_ptr而不是unique_ptr,因为会同时存在多个env,
+        // 并且在构造Procedure时传递外界env后,外界env还是要使用的,应该设计成所有权共享的智能指针.
+        using handle = std::shared_ptr<Env>;
     private:
-        std::unordered_map<string_t, EnvValue> map;
+        std::unordered_map<string_t, Value> map;
         Env::handle outer_env = nullptr;
     private:
         Env() = default; // 这个构造函数主要是给构造全局Env使用,所以用private修饰,外界不可使用.
@@ -151,24 +165,22 @@ namespace lisp {
                     // 这里不需要对args_value为nil()的做报错处理. 因为即使传递给函数的参数是nil(),
                     // 函数在执行时必然会检查参数是否满足自己的要求,如果不满足就继续返回nil(),
                     // 这样一层层传递下去,最后整个表达式返回的也是nil(). 符合我们计算错误返回nil()的语义要求,是绝佳的设计.
-                    if (is_Value_Number(args_value[i])) {
-                        map.insert({args_names[i], EnvValue{Type::Number, args_value[i]}});
-                    } else if (is_Value_Bool(args_value[i])) {
-                        map.insert({args_names[i], EnvValue{Type::Boolean, args_value[i]}});
-                    } else if (is_Value_nil(args_value[i])) {
-                        map.insert({args_names[i], EnvValue{Type::Null, args_value[i]}});
-                    }
+                    map.insert({args_names[i], args_value[i]});
                 }
             } else {
                 report_semantic_error("error");
             }
         }
 
-        EnvValue find(const string_t &atom_name) {
-            auto pos = map.find(atom_name);
-            if (pos == map.end()) { // 当前env没有找到atom的定义,尝试向外层的env查找
+        void insert(const string_t &name, Value value) {
+            this->map.insert({name, value});
+        }
+
+        Value find(const string_t &atom_name) {
+            auto pos = this->map.find(atom_name);
+            if (pos == this->map.end()) { // 当前env没有找到atom的定义,尝试向外层的env查找
                 if (this->outer_env == nullptr) { // 当前env已经是最外层了
-                    return {Type::Null, nil()};   // 只能直接返回空值
+                    return nil();   // 只能直接返回空值
                 } else {                                     // 当前env外层还有一个env
                     return this->outer_env->find(atom_name); // 向外层env查找
                 }
@@ -178,37 +190,37 @@ namespace lisp {
 
         // 获取全局environment. 注意全局env的outer_env是nullptr,利用这一点来停止Env::find()的递归查找(当outer_env为空时停止查找)
         static Env::handle global_env() {
-            static Env::handle global_handle = make_ptr<Env>(); // outer_env 为空
+            static Env::handle global_handle = std::make_shared<Env>(); // outer_env 为空
             global_handle->map = {
                     {"+",
-                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return Number(std::get<Number>(args[0]).number +
                                                     std::get<Number>(args[1]).number);
                                   report_semantic_error("+ compute error");
                                   return nil();
-                              })}
+                              })
                     },
                     {"-",
-                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return (Number)(std::get<Number>(args[0]).number -
                                                       std::get<Number>(args[1]).number);
                                   report_semantic_error("- compute error");
                                   return nil();
-                              })}
+                              })
                     },
                     {"*",
-                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return (Number)(std::get<Number>(args[0]).number *
                                                       std::get<Number>(args[1]).number);
                                   report_semantic_error("* compute error");
                                   return nil();
-                              })}
+                              })
                     },
                     {"/",
-                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1])
                                       && std::get<Number>(args[1]).number != 0) { // 注意除法检查
                                       return (Number)(std::get<Number>(args[0]).number /
@@ -216,10 +228,10 @@ namespace lisp {
                                   }
                                   report_semantic_error("/ compute error");
                                   return nil();
-                              })}
+                              })
                     },
                     {"eq?",
-                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Value> &args) -> Value {
                                   // 两个Value类型相同就能参与比较
                                   if (args.size() == 2 && is_Value_same_type(args[0], args[1])) {
                                       if (is_Value_Number(args[0])) {
@@ -228,19 +240,18 @@ namespace lisp {
                                       } else if (is_Value_Bool(args[0])) {
                                           return (Bool)(std::get<Bool>(args[0]).value
                                                         == std::get<Bool>(args[1]).value);
-                                      } else { // TODO 两个都是空值,可以考虑返回true,也可以考虑因为计算错误,返回nil
-                                          // return Bool(true);
+                                      } else { // 两个nil或两个Function不可比较,所以返回nil
                                           return nil();
                                       }
                                   }
                                   report_semantic_error("eq? compute error");
                                   return nil();
-                              })}
+                              })
                     },
-                    {"True",  EnvValue{Type::Boolean, Bool(true)}},
-                    {"False", EnvValue{Type::Boolean, Bool(false)}}
+                    {"True",  Bool(true)},
+                    {"False", Bool(false)}
             };
-            return std::move(global_handle);
+            return global_handle;
         }
     };
 }
