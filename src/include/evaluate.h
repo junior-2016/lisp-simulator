@@ -25,7 +25,7 @@ namespace lisp {
     /**
      * 非csp的evaluator
      */
-    void eval(Ast::ptr root, Env env) {
+    auto eval(Ast::ptr root, Env::handle env) -> Value {
 
     }
 

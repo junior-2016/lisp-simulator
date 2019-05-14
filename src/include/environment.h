@@ -1,5 +1,7 @@
 #include <utility>
 
+#include <utility>
+
 //
 // Created by junior on 19-5-12.
 //
@@ -13,6 +15,7 @@
 #include "exception.h"
 
 namespace lisp {
+
     /**
      * 符号表预定义的Symbol(Atom)(注意这些Symbol已经预定义,所以不允许在代码中重新定义)
      * defined_symbol_map
@@ -91,7 +94,40 @@ namespace lisp {
         return value.index() == 2;
     }
 
-    using Function = std::function<Value(std::vector<Value> &)>; // 现在还有一个缺陷是参数的类型,是不是应该抽象出一个ArgType
+    // 判断两个Value是否同类型
+    inline bool is_Value_same_type(Value a, Value b) {
+        return (is_Value_Number(a) && is_Value_Number(b)) ||
+               (is_Value_Bool(a) && is_Value_Bool(b)) ||
+               (is_Value_nil(a) && is_Value_nil(b));
+    }
+
+    /**
+     * 定义函数抽象类型 Function,同时带有虚函数接口: virtual Value operator()(std::vector<Value>&args) ;
+     */
+    class Function {
+    public:
+        using FunctionType = std::function<Value(const std::vector<Value> &)>;
+    private:
+        FunctionType function = [](const std::vector<Value> &) -> Value { return nil(); };
+        // function初始化为一个默认的空实现,也就是直接返回空值
+    public:
+        // 继承Function的函数类有时候想要通过重写operator()来实现一些别的功能,并且也用不到内部持有的function对象(比如Procedure类),
+        // 但继承的函数类还是需要初始化父类的成员,所以这里提供一个无参的Function()构造来初始化内部function对象为默认的空实现.
+        Function() = default;
+
+        explicit Function(FunctionType function) : function(std::move(function)) {}
+
+        virtual ~Function() = default;
+
+        // 默认的operator()直接执行内部持有的functional对象
+        virtual Value operator()(const std::vector<Value> &);
+    };
+
+    Value Function::operator()(const std::vector<Value> &args) {
+        return function(args);
+    }
+
+    // using Function = std::function<Value(std::vector<Value> &)>; // 现在还有一个缺陷是参数的类型,是不是应该抽象出一个ArgType
 
     struct EnvValue {
         Type type; // TODO 这个Type可能需要简化为 Type::Func 和 Type::Value 两个就行, 剩下的靠Value.index()自己就可以判断了
@@ -99,14 +135,17 @@ namespace lisp {
     };
 
     class Env {
+    public:
+        using handle =  std::unique_ptr<Env>;
     private:
         std::unordered_map<string_t, EnvValue> map;
-        Env outer_env;
+        Env::handle outer_env = nullptr;
+    private:
+        Env() = default; // 这个构造函数主要是给构造全局Env使用,所以用private修饰,外界不可使用.
     public:
-        Env() = default;
-
+        // 公开的Env构造接口
         Env(const std::vector<string_t> &args_names, const std::vector<Value> &args_value,
-            const Env &outer_env) : outer_env(outer_env) {
+            Env::handle outer_env) : outer_env(std::move(outer_env)) {
             if (args_names.size() == args_value.size()) {
                 for (size_t i = 0; i < args_names.size(); i++) {
                     // 这里不需要对args_value为nil()的做报错处理. 因为即使传递给函数的参数是nil(),
@@ -125,11 +164,24 @@ namespace lisp {
             }
         }
 
-        static Env global_env() {
-            static Env env;
-            env.map = {
+        EnvValue find(const string_t &atom_name) {
+            auto pos = map.find(atom_name);
+            if (pos == map.end()) { // 当前env没有找到atom的定义,尝试向外层的env查找
+                if (this->outer_env == nullptr) { // 当前env已经是最外层了
+                    return {Type::Null, nil()};   // 只能直接返回空值
+                } else {                                     // 当前env外层还有一个env
+                    return this->outer_env->find(atom_name); // 向外层env查找
+                }
+            }
+            return (*pos).second; // 在当前environment找到这个atom的定义
+        }
+
+        // 获取全局environment. 注意全局env的outer_env是nullptr,利用这一点来停止Env::find()的递归查找(当outer_env为空时停止查找)
+        static Env::handle global_env() {
+            static Env::handle global_handle = make_ptr<Env>(); // outer_env 为空
+            global_handle->map = {
                     {"+",
-                              EnvValue{Type::Func, (Function) ([](std::vector<Value> &args) -> Value {
+                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return Number(std::get<Number>(args[0]).number +
                                                     std::get<Number>(args[1]).number);
@@ -138,86 +190,58 @@ namespace lisp {
                               })}
                     },
                     {"-",
-                              EnvValue{Type::Func, (Function) ([](std::vector<Value> &args) -> Value {
+                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
-                                      return (Number) (std::get<Number>(args[0]).number -
-                                                       std::get<Number>(args[1]).number);
+                                      return (Number)(std::get<Number>(args[0]).number -
+                                                      std::get<Number>(args[1]).number);
                                   report_semantic_error("- compute error");
                                   return nil();
                               })}
                     },
                     {"*",
-                              EnvValue{Type::Func, (Function) ([](std::vector<Value> &args) -> Value {
+                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
-                                      return (Number) (std::get<Number>(args[0]).number *
-                                                       std::get<Number>(args[1]).number);
+                                      return (Number)(std::get<Number>(args[0]).number *
+                                                      std::get<Number>(args[1]).number);
                                   report_semantic_error("* compute error");
                                   return nil();
                               })}
                     },
                     {"/",
-                              EnvValue{Type::Func, (Function) ([](std::vector<Value> &args) -> Value {
+                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1])
                                       && std::get<Number>(args[1]).number != 0) { // 注意除法检查
-                                      return (Number) (std::get<Number>(args[0]).number /
-                                                       std::get<Number>(args[1]).number);
+                                      return (Number)(std::get<Number>(args[0]).number /
+                                                      std::get<Number>(args[1]).number);
                                   }
                                   report_semantic_error("/ compute error");
+                                  return nil();
+                              })}
+                    },
+                    {"eq?",
+                              EnvValue{Type::Func, Function([](const std::vector<Value> &args) -> Value {
+                                  // 两个Value类型相同就能参与比较
+                                  if (args.size() == 2 && is_Value_same_type(args[0], args[1])) {
+                                      if (is_Value_Number(args[0])) {
+                                          return (Bool)(std::get<Number>(args[0]).number
+                                                        == std::get<Number>(args[1]).number);
+                                      } else if (is_Value_Bool(args[0])) {
+                                          return (Bool)(std::get<Bool>(args[0]).value
+                                                        == std::get<Bool>(args[1]).value);
+                                      } else { // TODO 两个都是空值,可以考虑返回true,也可以考虑因为计算错误,返回nil
+                                          // return Bool(true);
+                                          return nil();
+                                      }
+                                  }
+                                  report_semantic_error("eq? compute error");
                                   return nil();
                               })}
                     },
                     {"True",  EnvValue{Type::Boolean, Bool(true)}},
                     {"False", EnvValue{Type::Boolean, Bool(false)}}
             };
-            return env;
+            return std::move(global_handle);
         }
-
-        EnvValue find(const string_t &atom_name) {
-            auto pos = map.find(atom_name);
-            if (pos == map.end()) {
-                return {Type::Null, nil()};
-            } else {
-
-            }
-        }
-    };
-
-    /**
-     * 核心的要素在于重载的 T operator()(Args && args):
-     * 后面声明 define V lambda (x y) ( lambda ( x y) (+ x y) ) 时,即:
-     * Env[V] <--- Store ---  Procedure object <--- Construct --- Procedure(lambda_args_names, lambda_body)
-     * 调用时: ( (V 5 6) 5 6 )
-     * parser 结果 x = [ [V 5 6] 5 6]
-     * 取出 xx = x[0] = [ V 5 6 ],
-     * eval() 从 Env[V] 查出这个 Procedure 对象V,
-     * 接着:
-     * eval() 调用 V.operator(5,6),
-     * 接着:
-     * V.operator(5,6) 内部调用 eval(this->body,Env(this->args_names,args,this->env))
-     */
-    class Procedure {
-    private:
-        // lambda 函数体就是: Ast[ 0: lambda 1: (args_list) 2: (body)] 切下来的 Ast[2],直接保存这个节点即可,
-        // 后面再通过eval(body,env)来进一步执行body的内容,即懒惰执行.
-        Ast::ptr function_body;
-
-        // lambda 函数体的参数列表,直接保存其原子名称即可.
-        std::vector<string_t> function_args_names;
-
-        // lambda函数当前所处的 Environment.
-        // 当调用 Procedure().operator(args)的时候,这个env又作为函数体里面另一个内部嵌套函数的 outer_environment
-        Env env;
-    public:
-        Procedure(Ast::ptr body, const std::vector<string_t> &args_names, Env env) {
-            this->function_body = std::move(body);
-            this->function_args_names = args_names;
-            this->env = env;
-        }
-
-        Value operator()(const std::vector<Value> &args) {
-            eval(this->function_body, Env(this->function_args_names, args, this->env));
-        }
-
     };
 }
 #endif //LISP_SIMULATOR_ENVIRONMENT_H
