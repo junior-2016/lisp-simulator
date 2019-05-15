@@ -1,5 +1,3 @@
-#include <utility>
-
 //
 // Created by junior on 19-5-12.
 //
@@ -167,14 +165,12 @@ namespace lisp {
         // 公开的Env构造接口
         Env(const std::vector<string_t> &args_names, const std::vector<Function::Value> &args_value,
             Env::handle outer_env) : outer_env(std::move(outer_env)) {
-            std::cout << "construct env\n";
             if (args_names.size() == args_value.size()) {
                 for (size_t i = 0; i < args_names.size(); i++) {
                     // 这里不需要对args_value为nil()的做报错处理. 因为即使传递给函数的参数是nil(),
                     // 函数在执行时必然会检查参数是否满足自己的要求,如果不满足就继续返回nil(),
                     // 这样一层层传递下去,最后整个表达式返回的也是nil(). 符合我们计算错误返回nil()的语义要求,是绝佳的设计.
                     map.insert({args_names[i], args_value[i]});
-                    std::cout << args_names[i] << " " << value_to_string(args_value[i]) << "\n";
                 }
             } else {
                 report_semantic_error("error");

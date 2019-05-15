@@ -42,7 +42,6 @@ namespace lisp {
                     // op_child 是 单独一个 Token,此时肯定是: atom函数调用/define定义/cond调用/lambda定义
                     if (op_child->token->type == TokenType::ATOM) {
                         string_t name = *std::get<string_ptr>(op_child->token->value);
-                        std::cout << "op name is :" << name << "\n";
                         if (name == "define") {
                             // define 结束后是没有返回的,但是这里可以考虑返回nil
                             // define 必须满足: define atom [...]
@@ -58,14 +57,12 @@ namespace lisp {
                             return nil::null();
                         } else if (name == "lambda") {
                             // lambda [0]: args_names [1]: body
-                            std::cout << "call lambda\n";
                             if (args.size() == 2) {
                                 std::vector<string_t> args_names; // 处理lambda函数参数名列表
                                 if (!args[0]->children.empty()) {
                                     for (auto &child:args[0]->children) {
                                         if (child->token != nullptr && child->token->type == TokenType::ATOM) {
                                             args_names.push_back(*std::get<string_ptr>(child->token->value));
-                                            std::cout << *std::get<string_ptr>(child->token->value) << "\n";
                                         } else {
                                             report_semantic_error("error");
                                             return nil::null();
@@ -80,8 +77,38 @@ namespace lisp {
                                 report_semantic_error("error");
                                 return nil::null();
                             }
-                        }//else if (name == "cond") {} // 先不处理cond
-                        else {
+                        } else if (name == "cond") {
+                            if (args.size() >= 2) {
+                                // cond的args至少有两个,每一个args都是(bool_expr other_expr)的形式,
+                                // 并且至少有一个bool_expr返回true.
+                                size_t true_expr_pos = args.size();
+                                for (size_t i = 0; i < args.size(); i++) {
+                                    if (args[i]->children.size() != 2) {
+                                        report_semantic_error("error");
+                                        return nil::null();
+                                    }
+                                    auto bool_expr = eval(args[i]->children[0], env); // bool_expr
+                                    if (!is_Value_Bool(bool_expr)) { // 如果不是Bool类型,报错
+                                        report_semantic_error("error");
+                                        return nil::null();
+                                    }
+                                    if (true_expr_pos == args.size() && std::get<Bool::ptr>(bool_expr)->value) {
+                                        // 找到第一个bool_expr为true的,然后设置位置.
+                                        // 后面的参数即使出现true也不管了,所以这里多一个条件是true_expr_pos没有被修改过.
+                                        true_expr_pos = i;
+                                    }
+                                }
+                                if (true_expr_pos == args.size()) {
+                                    report_semantic_error("error"); // 没有一个参数的bool expr是true,报错
+                                    return nil::null();
+                                } else {
+                                    return eval(args[true_expr_pos]->children[1], env);// 最后才计算唯一正确的参数的返回值
+                                }
+                            } else {
+                                report_semantic_error("error");
+                                return nil::null();
+                            }
+                        } else {
                             // op_child args 是 (atom args) 函数调用
                             auto function = eval(op_child, env);// 这里递归下去其实只要一步就能从env->find(op_child->token_name)得到函数
                             if (is_Value_Function(function)) {
@@ -89,9 +116,6 @@ namespace lisp {
                                 args_values.reserve(args.size());
                                 for (auto &arg:args) {
                                     args_values.push_back(eval(arg, env));
-                                }
-                                for (auto &arg:args_values) {
-                                    std::cout << value_to_string(arg) << "\n";
                                 }
                                 auto proc = try_cast_to_procedure_function(std::get<Function::ptr>(function));
                                 if (proc != nullptr) {

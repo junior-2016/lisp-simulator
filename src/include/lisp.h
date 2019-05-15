@@ -22,6 +22,7 @@
 #include <set>
 #include <unordered_set>
 #include <algorithm>
+#include <utility>
 
 // Other C++ std include
 #include <memory>
