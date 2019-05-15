@@ -13,8 +13,26 @@ namespace lisp {
     using namespace std::chrono_literals;
     using namespace std::placeholders;
 
+    template<typename T>
+    struct Ptr {
+        using Type = std::shared_ptr<T>;
+    };
+
     using string_t = std::string;
-    using string_ptr = std::unique_ptr<string_t>;
+    using string_ptr = Ptr<string_t>::Type;
+
+    template<typename T, typename ...Args>
+    std::enable_if_t<!std::is_array<T>::value, std::shared_ptr<T>>
+    make_ptr(Args &&... args) {
+        return std::make_shared<T>(std::forward<Args>(args)...);
+    }
+
+    template<typename T>
+    std::enable_if_t<std::is_array<T>::value && std::extent<T>::value == 0,
+            std::shared_ptr<T>>
+    make_ptr(size_t size) {
+        return std::make_shared<T>(size);
+    }
 
     using char_t = char;
     using int_t = int32_t;
@@ -33,24 +51,6 @@ namespace lisp {
     using ostream_t = std::ostream;
     using ifstream_t = std::ifstream;
     using ofstream_t = std::ofstream;
-
-    template<typename T, typename ...Args>
-    std::enable_if_t<!std::is_array<T>::value, std::unique_ptr<T>>
-    make_ptr(Args &&... args) {
-        return std::make_unique<T>(std::forward<Args>(args)...);
-    }
-
-/**
- * 创建大小为size的数组类型的unique_ptr.
- * 这里要求数组类型 T = type[], 此时维度 std::extent<T> = std::extent<type[]> 为 0,即空数组.
- * eg: decltype(auto) ptr = make_ptr<int[]>(4);
- */
-    template<typename T>
-    std::enable_if_t<std::is_array<T>::value && std::extent<T>::value == 0,
-            std::unique_ptr<T>>
-    make_ptr(size_t size) {
-        return std::make_unique<T>(size);
-    }
 
 /**
  * 用正则表达式判断字符串是否为数值.

@@ -50,7 +50,7 @@ namespace lisp {
                     } else {
                         auto root = parse(source);
                         if (PRINT_AST) {
-                            auto ast_str = Ast::to_string(std::move(root));
+                            auto ast_str = Ast::to_string(root);
                             standard_output("%s", ast_str.c_str());
                         }
                         if (ExceptionHandle::global_handle().hasException()) {
@@ -58,8 +58,8 @@ namespace lisp {
                             error_output("%s", message.c_str());
                         } else {
                             // evaluate
-                            auto value = eval(std::move(root), Env::global_env());
-                            standard_output("Value = %s\n", to_string(value).c_str());
+                            auto value = eval(root, Env::global_env());
+                            standard_output("Value = %s\n", value_to_string(value).c_str());
                         }
                     }
                     source = "";

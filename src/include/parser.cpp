@@ -8,8 +8,8 @@ namespace lisp {
         ExceptionHandle::global_handle().add_exception(ExceptionType::SYNTAX_ERROR, string);
     }
 
-    std::vector<Token>::iterator end_pos;
-    std::vector<Token>::iterator pos;
+    std::vector<Token::ptr>::iterator end_pos;
+    std::vector<Token::ptr>::iterator pos;
 
     inline bool is_token_end() { return pos == end_pos; }
 
@@ -20,31 +20,31 @@ namespace lisp {
             report_syntax_error("error");
             return nullptr;
         }
-        Token token = std::move(*pos);
+        auto token = *pos;
         skip_token();
-        if (token.type == TokenType::RPAREN) {
+        if (token->type == TokenType::RPAREN) {
             report_syntax_error("error");
             return nullptr;
-        } else if (token.type == TokenType::LPAREN) {
+        } else if (token->type == TokenType::LPAREN) {
             Ast::ptr root = make_ptr<Ast>();
-            while ((*pos).type != TokenType::RPAREN) {
+            while ((*pos)->type != TokenType::RPAREN) {
                 root->add_child(traverseTokenList());
             }
             skip_token();
             return root;
         } else {
-            return make_ptr<Ast>(make_ptr<Token>(std::move(token)));
+            return make_ptr<Ast>(token);
         }
     }
 
     Ast::ptr parse(const string_t &source) {
-        auto tokenList = getTokenList(source);
+        auto tokenList = Scanner::getTokenList(source);
         pos = tokenList.begin();
         end_pos = tokenList.end();
         return traverseTokenList();
     }
 
-    string_t Ast::to_string(Ast::ptr ptr, int tab) {
+    string_t Ast::to_string(const Ast::ptr &ptr, int tab) {
         string_t result;
         for (int i = 0; i < tab; i++) {
             result += "\t";
@@ -58,7 +58,7 @@ namespace lisp {
         } else {
             result += "[\n";
             for (auto &item : ptr->children) {
-                result += to_string(std::move(item), tab + 1);
+                result += to_string(item, tab + 1);
             }
             for (int i = 0; i < tab; i++) {
                 result += "\t";

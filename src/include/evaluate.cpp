@@ -17,7 +17,7 @@ namespace lisp {
     /**
      * 非csp的evaluator
      */
-    auto eval(Ast::ptr root, const Env::handle &env) -> Value {
+    auto eval(const Ast::ptr &root, const Env::handle &env) -> Function::Value {
         if (root->token != nullptr) { // 只有单独一个节点,没有任何child
             if (root->token->type == TokenType::NUMBER) {
                 return Number(std::get<number_t>(root->token->value));
@@ -28,8 +28,8 @@ namespace lisp {
             if (root->children.empty()) { // token,child都没有,返回空值
                 return nil();
             } else {
-                auto op_child = std::move(root->children[0]); // 取第一个child作为op
-                auto args = std::vector<Ast::ptr>(root->children.begin() + 1, root->children.end());//剩下的child作为args
+                auto op_child = root->children[0]; // 取第一个child作为op
+                std::vector<Ast::ptr> args(root->children.begin() + 1, root->children.end());
                 if (op_child->token != nullptr) {
                     // op_child 是 单独一个 Token,此时肯定是: atom函数调用/define定义/cond调用/lambda定义
                     if (op_child->token->type == TokenType::ATOM) {
@@ -40,8 +40,7 @@ namespace lisp {
                             if (args.size() == 2 &&
                                 args[0]->token != nullptr &&
                                 args[0]->token->type == TokenType::ATOM) {
-                                env->insert(*std::get<string_ptr>(args[0]->token->value),
-                                            eval(std::move(args[1]), env));
+                                env->insert(*std::get<string_ptr>(args[0]->token->value), eval(args[1], env));
                             } else {
                                 report_semantic_error("error");
                             }
@@ -59,7 +58,7 @@ namespace lisp {
                                             return nil();
                                         }
                                     }
-                                    return Procedure(std::move(args[1]), args_names, env); // 返回lambda定义的函数
+                                    return Procedure(args[1], args_names, env); // 返回lambda定义的函数
                                 } else {
                                     report_semantic_error("error");
                                     return nil();
@@ -71,12 +70,12 @@ namespace lisp {
                         }//else if (name == "cond") {} // 先不处理cond
                         else {
                             // op_child args 是 (atom args) 函数调用
-                            auto function = eval(std::move(op_child),
-                                                 env);// 这里递归下去其实只要一步就能从env->find(op_child->token_name)得到函数
+                            auto function = eval(op_child, env);// 这里递归下去其实只要一步就能从env->find(op_child->token_name)得到函数
                             if (is_Value_Function(function)) {
-                                std::vector<Value> args_values;
+                                std::vector<Function::Value> args_values;
+                                args_values.reserve(args.size());
                                 for (auto &arg:args) {
-                                    args_values.push_back(eval(std::move(arg), env));
+                                    args_values.push_back(eval(arg, env));
                                 }
                                 return std::get<Function>(function)(args_values);
                             } else {
@@ -92,11 +91,12 @@ namespace lisp {
                     // op_child 本身也是一个需要运行的函数调用,同时返回一个函数(用Procedure继承Function来实现这个功能)
                     // 比如：((f args) args),第一个op_child(f args)需要调用并返回一个新函数
                     // 但是写法和前面的函数调用写法是一样的
-                    auto function = eval(std::move(op_child), env);// 这里递归下去可能还需要计算很多次才能返回一个函数
+                    auto function = eval(op_child, env);// 这里递归下去可能还需要计算很多次才能返回一个函数
                     if (is_Value_Function(function)) {
-                        std::vector<Value> args_values;
+                        std::vector<Function::Value> args_values;
+                        args_values.reserve(args.size());
                         for (auto &arg:args) {
-                            args_values.push_back(eval(std::move(arg), env));
+                            args_values.push_back(eval(arg, env));
                         }
                         return std::get<Function>(function)(args_values);
                     } else {

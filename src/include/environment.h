@@ -1,9 +1,3 @@
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
 //
 // Created by junior on 19-5-12.
 //
@@ -69,49 +63,17 @@ namespace lisp {
         }
     };
 
-    // 前置声明Function, 使得Value可以包含Function.
-    // (由于Value需要包含Function,而Function又需要使用Value作为参数和返回值,所以这里的循环依赖需要通过前置声明来解决)
-    class Function;
-
-    using Value = std::variant<nil, Number, Bool, Function>;
-
-    template<typename T>
-    bool is_nil(T value) {
-        return std::is_same<decltype(value), nil>::value;
-    }
-
-    inline bool is_Value_nil(Value value) {
-        return value.index() == 0;
-    }
-
-    inline bool is_Value_Number(Value value) {
-        return value.index() == 1;
-    }
-
-    inline bool is_Value_Bool(Value value) {
-        return value.index() == 2;
-    }
-
-    inline bool is_Value_Function(Value value) {
-        return value.index() == 3;
-    }
-
-    // 判断两个Value是否同类型
-    inline bool is_Value_same_type(Value a, Value b) {
-        return (is_Value_Number(a) && is_Value_Number(b)) ||
-               (is_Value_Bool(a) && is_Value_Bool(b)) ||
-               (is_Value_nil(a) && is_Value_nil(b)) ||
-               (is_Value_Function(a) && is_Value_Function(b));
-    }
-
     /**
      * 定义函数抽象类型 Function,同时带有虚函数接口: virtual Value operator()(std::vector<Value>&args) ;
      */
     class Function {
     public:
-        using FunctionType = std::function<Value(const std::vector<Value> &)>;
+        // Value的定义应该放在Function里,从而依赖于Function. 因为Function的参数和返回值都是Value类型,
+        // 并且Value自己也需要拥有Function的定义,那么最佳的设计就是将Value变成Function的一个成员类型.
+        using Value = std::variant<nil, Number, Bool, Function>;
+        using FunctionType = std::function<Function::Value(const std::vector<Function::Value> &)>;
     private:
-        FunctionType function = [](const std::vector<Value> &) -> Value { return nil(); };
+        FunctionType function = [](const std::vector<Function::Value> &) -> Function::Value { return nil(); };
         // function初始化为一个默认的空实现,也就是直接返回空值
     public:
         // 继承Function的函数类有时候想要通过重写operator()来实现一些别的功能,并且也用不到内部持有的function对象(比如Procedure类),
@@ -123,7 +85,7 @@ namespace lisp {
         virtual ~Function() = default;
 
         // 默认的operator()直接执行内部持有的functional对象
-        virtual Value operator()(const std::vector<Value> &args) {
+        virtual Function::Value operator()(const std::vector<Function::Value> &args) {
             return function(args);
         }
 
@@ -133,32 +95,62 @@ namespace lisp {
         }
     };
 
-    // 统一输出接口
-    string_t to_string(Value value) {
-        if (is_Value_Number(value)) {
-            return std::get<Number>(value).to_string();
-        } else if (is_Value_nil(value)) {
-            return std::get<nil>(value).to_string();
-        } else if (is_Value_Bool(value)) {
-            return std::get<Bool>(value).to_string();
-        } else {
-            return std::get<Function>(value).to_string();
-        }
+    inline bool is_Value_nil(const Function::Value &value) {
+        return value.index() == 0;
     }
+
+    inline bool is_Value_Number(const Function::Value &value) {
+        return value.index() == 1;
+    }
+
+    inline bool is_Value_Bool(const Function::Value &value) {
+        return value.index() == 2;
+    }
+
+    inline bool is_Value_Function(const Function::Value &value) {
+        return value.index() == 3;
+    }
+
+    // 判断两个Value是否同类型
+    inline bool is_Value_same_type(const Function::Value &a, const Function::Value &b) {
+        return (is_Value_Number(a) && is_Value_Number(b)) ||
+               (is_Value_Bool(a) && is_Value_Bool(b)) ||
+               (is_Value_nil(a) && is_Value_nil(b)) ||
+               (is_Value_Function(a) && is_Value_Function(b));
+    }
+
+    // 统一输出接口
+    template<typename F>
+    struct variant_method_invoke {
+        F f;
+
+        variant_method_invoke(F &&f) : f(std::move(f)) {}
+
+        template<typename Variant>
+        friend decltype(auto) operator->*(Variant &variant, variant_method_invoke &invoke) {
+            return [&](auto &&... args) -> decltype(auto) { // operator->*返回一个函数
+                return std::visit(
+                        [&](auto &&self) -> decltype(auto) {
+                            // 这里的self参数实际传递为std::visit的第二个参数variant
+                            return invoke.f(decltype(self)(self), decltype(args)(args)...);
+                        },
+                        std::forward<Variant>(variant));
+            };
+        }
+    };
+
+    string_t value_to_string(Function::Value value);
 
     class Env {
     public:
-        // Env::handle应该用shared_ptr而不是unique_ptr,因为会同时存在多个env,
-        // 并且在构造Procedure时传递外界env后,外界env还是要使用的,应该设计成所有权共享的智能指针.
-        using handle = std::shared_ptr<Env>;
+        using handle = Ptr<Env>::Type;
     private:
-        std::unordered_map<string_t, Value> map;
+        std::unordered_map<string_t, Function::Value> map;
         Env::handle outer_env = nullptr;
-    private:
-        Env() = default; // 这个构造函数主要是给构造全局Env使用,所以用private修饰,外界不可使用.
     public:
+        Env() = default; // 这个构造函数主要是给构造全局Env使用
         // 公开的Env构造接口
-        Env(const std::vector<string_t> &args_names, const std::vector<Value> &args_value,
+        Env(const std::vector<string_t> &args_names, const std::vector<Function::Value> &args_value,
             Env::handle outer_env) : outer_env(std::move(outer_env)) {
             if (args_names.size() == args_value.size()) {
                 for (size_t i = 0; i < args_names.size(); i++) {
@@ -172,11 +164,11 @@ namespace lisp {
             }
         }
 
-        void insert(const string_t &name, Value value) {
+        void insert(const string_t &name, const Function::Value &value) {
             this->map.insert({name, value});
         }
 
-        Value find(const string_t &atom_name) {
+        Function::Value find(const string_t &atom_name) {
             auto pos = this->map.find(atom_name);
             if (pos == this->map.end()) { // 当前env没有找到atom的定义,尝试向外层的env查找
                 if (this->outer_env == nullptr) { // 当前env已经是最外层了
@@ -190,10 +182,10 @@ namespace lisp {
 
         // 获取全局environment. 注意全局env的outer_env是nullptr,利用这一点来停止Env::find()的递归查找(当outer_env为空时停止查找)
         static Env::handle global_env() {
-            static Env::handle global_handle = std::make_shared<Env>(); // outer_env 为空
+            static Env::handle global_handle = make_ptr<Env>(); // outer_env 为空
             global_handle->map = {
                     {"+",
-                              Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return Number(std::get<Number>(args[0]).number +
                                                     std::get<Number>(args[1]).number);
@@ -202,7 +194,7 @@ namespace lisp {
                               })
                     },
                     {"-",
-                              Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return (Number)(std::get<Number>(args[0]).number -
                                                       std::get<Number>(args[1]).number);
@@ -211,7 +203,7 @@ namespace lisp {
                               })
                     },
                     {"*",
-                              Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
                                       return (Number)(std::get<Number>(args[0]).number *
                                                       std::get<Number>(args[1]).number);
@@ -220,7 +212,7 @@ namespace lisp {
                               })
                     },
                     {"/",
-                              Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
                                   if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1])
                                       && std::get<Number>(args[1]).number != 0) { // 注意除法检查
                                       return (Number)(std::get<Number>(args[0]).number /
@@ -231,7 +223,7 @@ namespace lisp {
                               })
                     },
                     {"eq?",
-                              Function([](const std::vector<Value> &args) -> Value {
+                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
                                   // 两个Value类型相同就能参与比较
                                   if (args.size() == 2 && is_Value_same_type(args[0], args[1])) {
                                       if (is_Value_Number(args[0])) {

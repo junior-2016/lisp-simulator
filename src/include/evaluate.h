@@ -12,7 +12,7 @@
 
 namespace lisp {
     // 非csp的eval
-    auto eval(Ast::ptr root, const Env::handle& env) -> Value;
+    auto eval(const Ast::ptr& root, const Env::handle &env) -> Function::Value;
 
     // TODO : csp的evaluator
 
@@ -43,16 +43,15 @@ namespace lisp {
         // 当调用 Procedure().operator(args)的时候,这个env又作为函数体里面另一个内部嵌套函数的 outer_environment
         Env::handle env;
     public:
-        Procedure(Ast::ptr body, const std::vector<string_t> &args_names, const Env::handle &env) : Function() {
-            this->function_body = std::move(body);
+        Procedure(const Ast::ptr &body, const std::vector<string_t> &args_names, const Env::handle &env) : Function() {
+            this->function_body = body;
             this->function_args_names = args_names;
             this->env = env;
         }
 
         // 覆盖Function的operator()实现
         Value operator()(const std::vector<Value> &args) override {
-            return eval(std::move(this->function_body),
-                        std::make_shared<Env>(this->function_args_names, args, this->env));
+            return eval(this->function_body, make_ptr<Env>(this->function_args_names, args, this->env));
         }
 
         string_t to_string() const override {

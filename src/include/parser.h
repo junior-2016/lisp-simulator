@@ -13,21 +13,21 @@
 
 namespace lisp {
     struct Ast {
-        using ptr = std::unique_ptr<Ast>;
+        using ptr = Ptr<Ast>::Type;
         std::vector<Ast::ptr> children;
-        std::unique_ptr<Token> token = nullptr;
+        Token::ptr token = nullptr;
 
-        explicit Ast(std::unique_ptr<Token> token) : token(std::move(token)) {}
+        explicit Ast(Token::ptr token) : token(std::move(token)) {}
 
         explicit Ast() = default;
 
-        void add_child(Ast::ptr ptr) {
+        void add_child(const Ast::ptr &ptr) {
             if (ptr != nullptr) { // 确保添加的child不为空
-                children.push_back(std::move(ptr));
+                children.push_back(ptr);
             }
         }
 
-        static string_t to_string(Ast::ptr ptr, int tab = 0);
+        static string_t to_string(const Ast::ptr& ptr, int tab = 0);
     };
 
     Ast::ptr parse(const string_t &source);
