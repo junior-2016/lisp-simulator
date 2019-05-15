@@ -1,3 +1,5 @@
+#include <utility>
+
 //
 // Created by junior on 19-5-12.
 //
@@ -38,6 +40,7 @@ namespace lisp {
     }
 
     struct Number { // 数值类型
+        using ptr = Ptr<Number>::Type;
         number_t number;
 
         explicit Number(number_t number) : number(number) {}
@@ -48,6 +51,7 @@ namespace lisp {
     };
 
     struct Bool { // 布尔类型
+        using ptr = Ptr<Bool>::Type;
         bool value;
 
         explicit Bool(bool value) : value(value) {}
@@ -57,9 +61,18 @@ namespace lisp {
         }
     };
 
+    // TODO 将nil改成单例模式
     struct nil { // 空类型
+        using ptr = Ptr<nil>::Type;
+
         inline string_t to_string() const {
             return "nil";
+        }
+
+    public:
+        static nil::ptr null() {
+            static nil::ptr p = make_ptr<nil>();
+            return p;
         }
     };
 
@@ -70,10 +83,12 @@ namespace lisp {
     public:
         // Value的定义应该放在Function里,从而依赖于Function. 因为Function的参数和返回值都是Value类型,
         // 并且Value自己也需要拥有Function的定义,那么最佳的设计就是将Value变成Function的一个成员类型.
-        using Value = std::variant<nil, Number, Bool, Function>;
+        // 注意Value在储存Function的时候必须储存函数的指针,这样后面才能通过指针cast来判断这个函数是不是特定的函数子类对象!!
+        using ptr = Ptr<Function>::Type;
+        using Value = std::variant<nil::ptr, Number::ptr, Bool::ptr, Function::ptr>;
         using FunctionType = std::function<Function::Value(const std::vector<Function::Value> &)>;
     private:
-        FunctionType function = [](const std::vector<Function::Value> &) -> Function::Value { return nil(); };
+        FunctionType function = [](const std::vector<Function::Value> &) -> Function::Value { return nil::null(); };
         // function初始化为一个默认的空实现,也就是直接返回空值
     public:
         // 继承Function的函数类有时候想要通过重写operator()来实现一些别的功能,并且也用不到内部持有的function对象(比如Procedure类),
@@ -152,27 +167,30 @@ namespace lisp {
         // 公开的Env构造接口
         Env(const std::vector<string_t> &args_names, const std::vector<Function::Value> &args_value,
             Env::handle outer_env) : outer_env(std::move(outer_env)) {
+            std::cout << "construct env\n";
             if (args_names.size() == args_value.size()) {
                 for (size_t i = 0; i < args_names.size(); i++) {
                     // 这里不需要对args_value为nil()的做报错处理. 因为即使传递给函数的参数是nil(),
                     // 函数在执行时必然会检查参数是否满足自己的要求,如果不满足就继续返回nil(),
                     // 这样一层层传递下去,最后整个表达式返回的也是nil(). 符合我们计算错误返回nil()的语义要求,是绝佳的设计.
                     map.insert({args_names[i], args_value[i]});
+                    std::cout << args_names[i] << " " << value_to_string(args_value[i]) << "\n";
                 }
             } else {
                 report_semantic_error("error");
             }
         }
 
-        void insert(const string_t &name, const Function::Value &value) {
-            this->map.insert({name, value});
+        bool insert(const string_t &name, const Function::Value &value) {
+            // 插入的同时返回是否插入成功,如果插入失败,说明前面已经有符号定义了,不能重复定义
+            return this->map.insert({name, value}).second;
         }
 
         Function::Value find(const string_t &atom_name) {
             auto pos = this->map.find(atom_name);
             if (pos == this->map.end()) { // 当前env没有找到atom的定义,尝试向外层的env查找
                 if (this->outer_env == nullptr) { // 当前env已经是最外层了
-                    return nil();   // 只能直接返回空值
+                    return nil::null();   // 只能直接返回空值
                 } else {                                     // 当前env外层还有一个env
                     return this->outer_env->find(atom_name); // 向外层env查找
                 }
@@ -185,63 +203,68 @@ namespace lisp {
             static Env::handle global_handle = make_ptr<Env>(); // outer_env 为空
             global_handle->map = {
                     {"+",
-                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
-                                  if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
-                                      return Number(std::get<Number>(args[0]).number +
-                                                    std::get<Number>(args[1]).number);
-                                  report_semantic_error("+ compute error");
-                                  return nil();
-                              })
+                              make_ptr<Function>(
+                                      Function([](const std::vector<Function::Value> &args) -> Function::Value {
+                                          if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
+                                              return make_ptr<Number>(std::get<Number::ptr>(args[0])->number +
+                                                                      std::get<Number::ptr>(args[1])->number);
+                                          report_semantic_error("+ compute error");
+                                          return nil::null();
+                                      }))
                     },
                     {"-",
-                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
-                                  if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
-                                      return (Number)(std::get<Number>(args[0]).number -
-                                                      std::get<Number>(args[1]).number);
-                                  report_semantic_error("- compute error");
-                                  return nil();
-                              })
+                              make_ptr<Function>(
+                                      Function([](const std::vector<Function::Value> &args) -> Function::Value {
+                                          if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
+                                              return make_ptr<Number>(std::get<Number::ptr>(args[0])->number -
+                                                                      std::get<Number::ptr>(args[1])->number);
+                                          report_semantic_error("- compute error");
+                                          return nil::null();
+                                      }))
                     },
                     {"*",
-                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
-                                  if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
-                                      return (Number)(std::get<Number>(args[0]).number *
-                                                      std::get<Number>(args[1]).number);
-                                  report_semantic_error("* compute error");
-                                  return nil();
-                              })
+                              make_ptr<Function>(
+                                      Function([](const std::vector<Function::Value> &args) -> Function::Value {
+                                          if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
+                                              return make_ptr<Number>(std::get<Number::ptr>(args[0])->number *
+                                                                      std::get<Number::ptr>(args[1])->number);
+                                          report_semantic_error("* compute error");
+                                          return nil::null();
+                                      }))
                     },
                     {"/",
-                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
-                                  if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1])
-                                      && std::get<Number>(args[1]).number != 0) { // 注意除法检查
-                                      return (Number)(std::get<Number>(args[0]).number /
-                                                      std::get<Number>(args[1]).number);
-                                  }
-                                  report_semantic_error("/ compute error");
-                                  return nil();
-                              })
+                              make_ptr<Function>(
+                                      Function([](const std::vector<Function::Value> &args) -> Function::Value {
+                                          if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1])
+                                              && std::get<Number::ptr>(args[1])->number != 0) { // 注意除法检查
+                                              return make_ptr<Number>(std::get<Number::ptr>(args[0])->number /
+                                                                      std::get<Number::ptr>(args[1])->number);
+                                          }
+                                          report_semantic_error("/ compute error");
+                                          return nil::null();
+                                      }))
                     },
                     {"eq?",
-                              Function([](const std::vector<Function::Value> &args) -> Function::Value {
-                                  // 两个Value类型相同就能参与比较
-                                  if (args.size() == 2 && is_Value_same_type(args[0], args[1])) {
-                                      if (is_Value_Number(args[0])) {
-                                          return (Bool)(std::get<Number>(args[0]).number
-                                                        == std::get<Number>(args[1]).number);
-                                      } else if (is_Value_Bool(args[0])) {
-                                          return (Bool)(std::get<Bool>(args[0]).value
-                                                        == std::get<Bool>(args[1]).value);
-                                      } else { // 两个nil或两个Function不可比较,所以返回nil
-                                          return nil();
-                                      }
-                                  }
-                                  report_semantic_error("eq? compute error");
-                                  return nil();
-                              })
+                              make_ptr<Function>(
+                                      Function([](const std::vector<Function::Value> &args) -> Function::Value {
+                                          // 两个Value类型相同就能参与比较
+                                          if (args.size() == 2 && is_Value_same_type(args[0], args[1])) {
+                                              if (is_Value_Number(args[0])) {
+                                                  return make_ptr<Bool>(std::get<Number::ptr>(args[0])->number
+                                                                        == std::get<Number::ptr>(args[1])->number);
+                                              } else if (is_Value_Bool(args[0])) {
+                                                  return make_ptr<Bool>(std::get<Bool::ptr>(args[0])->value
+                                                                        == std::get<Bool::ptr>(args[1])->value);
+                                              } else { // 两个nil或两个Function不可比较,所以返回nil
+                                                  return nil::null();
+                                              }
+                                          }
+                                          report_semantic_error("eq? compute error");
+                                          return nil::null();
+                                      }))
                     },
-                    {"True",  Bool(true)},
-                    {"False", Bool(false)}
+                    {"True",  make_ptr<Bool>(true)},
+                    {"False", make_ptr<Bool>(false)}
             };
             return global_handle;
         }

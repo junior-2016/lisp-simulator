@@ -23,6 +23,7 @@ namespace lisp {
         size_t i = 0;
         size_t line_number = 0;
         std::vector<char_t> check_source_paren; // 检查括号
+        auto global_env = Env::global_env();
         while (true) {
             if (check_source_paren.empty()) {
                 standard_output("echo [%zu] > ", ++line_number);
@@ -58,8 +59,12 @@ namespace lisp {
                             error_output("%s", message.c_str());
                         } else {
                             // evaluate
-                            auto value = eval(root, Env::global_env());
+                            auto value = eval(root, global_env);
                             standard_output("Value = %s\n", value_to_string(value).c_str());
+                            if (ExceptionHandle::global_handle().hasException()) {
+                                auto message = ExceptionHandle::global_handle().to_string();
+                                error_output("%s", message.c_str());
+                            }
                         }
                     }
                     source = "";

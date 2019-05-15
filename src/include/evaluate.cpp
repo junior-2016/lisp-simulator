@@ -5,6 +5,14 @@
 
 namespace lisp {
     /**
+     * 辅助函数,尝试cast到procedure::ptr,需要判断返回的指针是否为空
+     */
+    Procedure::ptr try_cast_to_procedure_function(const Function::ptr &func) {
+        return std::dynamic_pointer_cast<Procedure>(func);
+        // 或者 return dynamic_cast<Procedure*>(func.get()) != nullptr;
+    }
+
+    /**
     * (define ID value):
     * 不能重绑定, 内部已经默认绑定了 +,-,*,/ 四个标识符, 所以如果写 (define + 5) 就会报variable + unbound错误.
     * 又比如: 已经写 (define add 5), 如果再写 (define add 4) 就会报 variable add unbound 错误.
@@ -20,13 +28,13 @@ namespace lisp {
     auto eval(const Ast::ptr &root, const Env::handle &env) -> Function::Value {
         if (root->token != nullptr) { // 只有单独一个节点,没有任何child
             if (root->token->type == TokenType::NUMBER) {
-                return Number(std::get<number_t>(root->token->value));
+                return make_ptr<Number>(std::get<number_t>(root->token->value));
             } else {
                 return env->find(*std::get<string_ptr>(root->token->value));
             }
         } else { // token为空,遍历child节点,往下处理
             if (root->children.empty()) { // token,child都没有,返回空值
-                return nil();
+                return nil::null();
             } else {
                 auto op_child = root->children[0]; // 取第一个child作为op
                 std::vector<Ast::ptr> args(root->children.begin() + 1, root->children.end());
@@ -34,38 +42,43 @@ namespace lisp {
                     // op_child 是 单独一个 Token,此时肯定是: atom函数调用/define定义/cond调用/lambda定义
                     if (op_child->token->type == TokenType::ATOM) {
                         string_t name = *std::get<string_ptr>(op_child->token->value);
+                        std::cout << "op name is :" << name << "\n";
                         if (name == "define") {
                             // define 结束后是没有返回的,但是这里可以考虑返回nil
                             // define 必须满足: define atom [...]
                             if (args.size() == 2 &&
                                 args[0]->token != nullptr &&
                                 args[0]->token->type == TokenType::ATOM) {
-                                env->insert(*std::get<string_ptr>(args[0]->token->value), eval(args[1], env));
+                                if (!env->insert(*std::get<string_ptr>(args[0]->token->value), eval(args[1], env))) {
+                                    report_semantic_error("redefine error"); // 如果插入后返回false,说明符号重定义了
+                                }
                             } else {
-                                report_semantic_error("error");
+                                report_semantic_error("define error");
                             }
-                            return nil();
+                            return nil::null();
                         } else if (name == "lambda") {
                             // lambda [0]: args_names [1]: body
+                            std::cout << "call lambda\n";
                             if (args.size() == 2) {
                                 std::vector<string_t> args_names; // 处理lambda函数参数名列表
                                 if (!args[0]->children.empty()) {
                                     for (auto &child:args[0]->children) {
                                         if (child->token != nullptr && child->token->type == TokenType::ATOM) {
                                             args_names.push_back(*std::get<string_ptr>(child->token->value));
+                                            std::cout << *std::get<string_ptr>(child->token->value) << "\n";
                                         } else {
                                             report_semantic_error("error");
-                                            return nil();
+                                            return nil::null();
                                         }
                                     }
-                                    return Procedure(args[1], args_names, env); // 返回lambda定义的函数
+                                    return make_ptr<Procedure>(args[1], args_names, env); // 返回lambda定义的函数
                                 } else {
                                     report_semantic_error("error");
-                                    return nil();
+                                    return nil::null();
                                 }
                             } else {
                                 report_semantic_error("error");
-                                return nil();
+                                return nil::null();
                             }
                         }//else if (name == "cond") {} // 先不处理cond
                         else {
@@ -77,15 +90,23 @@ namespace lisp {
                                 for (auto &arg:args) {
                                     args_values.push_back(eval(arg, env));
                                 }
-                                return std::get<Function>(function)(args_values);
+                                for (auto &arg:args_values) {
+                                    std::cout << value_to_string(arg) << "\n";
+                                }
+                                auto proc = try_cast_to_procedure_function(std::get<Function::ptr>(function));
+                                if (proc != nullptr) {
+                                    return proc->operator()(args_values);
+                                } else {
+                                    return std::get<Function::ptr>(function)->operator()(args_values);
+                                }
                             } else {
                                 report_semantic_error("error");
-                                return nil();
+                                return nil::null();
                             }
                         }
                     } else { // 如果是一个数值,需要报错,因为数值不是函数调用
                         report_semantic_error("error");
-                        return nil(); // 返回空值
+                        return nil::null(); // 返回空值
                     }
                 } else {
                     // op_child 本身也是一个需要运行的函数调用,同时返回一个函数(用Procedure继承Function来实现这个功能)
@@ -98,10 +119,15 @@ namespace lisp {
                         for (auto &arg:args) {
                             args_values.push_back(eval(arg, env));
                         }
-                        return std::get<Function>(function)(args_values);
+                        auto proc = try_cast_to_procedure_function(std::get<Function::ptr>(function));
+                        if (proc != nullptr) {
+                            return proc->operator()(args_values);
+                        } else {
+                            return std::get<Function::ptr>(function)->operator()(args_values);
+                        }
                     } else {
                         report_semantic_error("error");
-                        return nil();
+                        return nil::null();
                     }
                 }
             }
