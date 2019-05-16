@@ -11,9 +11,6 @@
 #include "exception.h"
 
 namespace lisp {
-    // TODO: environment和evaluate的接口对错误处理统一用了semantic,
-    //  后面必须区分syntax和semantic,因为有一些是syntax的问题
-
     /**
      * 符号表预定义的Symbol(Atom)(注意这些Symbol已经预定义,所以不允许在代码中重新定义)
      * defined_symbol_map
@@ -33,10 +30,6 @@ namespace lisp {
      *            数学函数    sin cos tan atan ....
      * 注意 除法函数不能除以0 ...
      */
-    inline void report_semantic_error(const string_t &string) {
-        ExceptionHandle::global_handle().add_exception(ExceptionType::SEMANTIC_ERROR, string);
-    }
-
     struct Number { // 数值类型
         using ptr = Ptr<Number>::Type;
         number_t number;
@@ -173,13 +166,33 @@ namespace lisp {
                     map.insert({args_names[i], args_value[i]});
                 }
             } else {
-                report_semantic_error("error");
+                report_semantic_error("Env(args_names,args_values,outer_env) args_names ans args_value not same size");
             }
         }
 
         bool insert(const string_t &name, const Function::Value &value) {
-            // 插入的同时返回是否插入成功,如果插入失败,说明前面已经有符号定义了,不能重复定义
+            // 插入的同时返回是否插入成功,如果插入失败,可能是前面已经有符号定义了,不能重复定义; 也可能是插入的值value为空
+            if (is_Value_nil(value)) return false;
             return this->map.insert({name, value}).second;
+        }
+
+        // 修改某个atom的值,和find一样可能需要在outer_env里查找.
+        // 1. 修改时,若atom没有查到定义,返回nil;
+        // 2. 若查到定义,但是atom之前储存的值类型与更新的值类型不同,也返回nil;
+        // (这里不用检查update_value是nil的情况,因为前面insert()已经确保了map里储存的都是非nil的值,通过第二点就可以排除)
+        Function::Value update(const string_t &atom_name, const Function::Value &update_value) {
+            auto pos = this->map.find(atom_name);
+            if (pos == this->map.end()) {
+                if (this->outer_env == nullptr) {
+                    return nil::null();
+                } else {
+                    return this->outer_env->update(atom_name, update_value);
+                }
+            }
+            if (is_Value_same_type((*pos).second, update_value)) {
+                return (*pos).second = update_value;
+            }
+            return nil::null();
         }
 
         Function::Value find(const string_t &atom_name) {

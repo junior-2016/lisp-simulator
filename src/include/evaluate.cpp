@@ -5,23 +5,15 @@
 
 namespace lisp {
     /**
-     * 辅助函数,尝试cast到procedure::ptr,需要判断返回的指针是否为空
+     * 辅助函数,尝试cast到procedure::ptr,使用时需要判断返回的指针是否为空
      */
     Procedure::ptr try_cast_to_procedure_function(const Function::ptr &func) {
         return std::dynamic_pointer_cast<Procedure>(func);
         // 或者 return dynamic_cast<Procedure*>(func.get()) != nullptr;
     }
 
-    /**
-    * (define ID value):
-    * 不能重绑定, 内部已经默认绑定了 +,-,*,/ 四个标识符, 所以如果写 (define + 5) 就会报variable + unbound错误.
-    * 又比如: 已经写 (define add 5), 如果再写 (define add 4) 就会报 variable add unbound 错误.
-    * 并且注意到 lisp 的 variable 是不允许 unbound 的,即每一个 ID 只能绑定一个数值/function,并且绑定后不能再修改.
-    */
-    /**
-     * 如果解析像 () 这样的空表达式, 生成的Ast是nullptr, 那么 evaluate 解析返回 "nil".
-     * evaluate的时候要注意 => 有一些 ast::ptr 是 nullptr, 要跳过.
-     */
+    // TODO 完善错误信息检查...
+
     /**
      * 非csp的evaluator
      */
@@ -49,7 +41,8 @@ namespace lisp {
                                 args[0]->token != nullptr &&
                                 args[0]->token->type == TokenType::ATOM) {
                                 if (!env->insert(*std::get<string_ptr>(args[0]->token->value), eval(args[1], env))) {
-                                    report_semantic_error("redefine error"); // 如果插入后返回false,说明符号重定义了
+                                    // 插入后返回false,可能是重定义符号或者define语句的第二个参数计算为空.
+                                    report_semantic_error("redefine atom or definition is nil.");
                                 }
                             } else {
                                 report_semantic_error("define error");
@@ -104,6 +97,24 @@ namespace lisp {
                                 } else {
                                     return eval(args[true_expr_pos]->children[1], env);// 最后才计算唯一正确的参数的返回值
                                 }
+                            } else {
+                                report_semantic_error("error");
+                                return nil::null();
+                            }
+                        } else if (name == "set!") {
+                            // set! atom expr
+                            // 1. 如果atom未定义,则报错; => 在Env::update()里检查
+                            // 2. set!允许返回expr的值,这样就可以出现(set! x (set! y expr))的连续赋值
+                            // 3. set!赋值的类型必须与atom之前储存的值类型一样 => 在Env::update()里检查
+                            if (args.size() == 2 &&
+                                args[0]->token != nullptr &&
+                                args[0]->token->type == TokenType::ATOM) {
+                                auto update_value = env->update(*std::get<string_ptr>(args[0]->token->value),
+                                                                eval(args[1], env));
+                                if (is_Value_nil(update_value)) {
+                                    report_semantic_error("error");
+                                }
+                                return update_value;
                             } else {
                                 report_semantic_error("error");
                                 return nil::null();

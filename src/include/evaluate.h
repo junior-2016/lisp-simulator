@@ -11,7 +11,7 @@
 #include "environment.h"
 
 namespace lisp {
-    // 非csp的eval
+
     auto eval(const Ast::ptr &root, const Env::handle &env) -> Function::Value;
 
     // TODO : csp的evaluator

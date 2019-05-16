@@ -62,5 +62,13 @@ namespace lisp {
             errors.clear();
         }
     };
+
+    inline void report_syntax_error(const string_t &string) {
+        ExceptionHandle::global_handle().add_exception(ExceptionType::SYNTAX_ERROR, string);
+    }
+
+    inline void report_semantic_error(const string_t &string) {
+        ExceptionHandle::global_handle().add_exception(ExceptionType::SEMANTIC_ERROR, string);
+    }
 }
 #endif //LISP_SIMULATOR_EXCEPTION_H
