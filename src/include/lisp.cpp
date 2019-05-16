@@ -81,6 +81,8 @@ namespace lisp {
         UtilTestCase::test();
     }
 
+    // TODO: 1. 添加对lisp文件的解释执行
+
     void main() {
 #ifdef DEBUG
         test_all();

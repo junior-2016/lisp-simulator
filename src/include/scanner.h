@@ -10,6 +10,7 @@
 #include "token.h"
 
 namespace lisp {
+    // TODO 添加注释,字符串解析等功能..
     struct Scanner {
     private:
         static inline void addToTokenList(const string_t &string, std::vector<Token::ptr> &tokenList) {

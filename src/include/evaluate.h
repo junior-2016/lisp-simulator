@@ -43,7 +43,8 @@ namespace lisp {
         // 当调用 Procedure().operator(args)的时候,这个env又作为函数体里面另一个内部嵌套函数的 outer_environment
         Env::handle env;
     public:
-        Procedure(const Ast::ptr &body, const std::vector<string_t> &args_names, const Env::handle &env) : Function() {
+        Procedure(const Ast::ptr &body, const std::vector<string_t> &args_names, const Env::handle &env,
+                  bool is_const = false) : Function(is_const) {
             this->function_body = body;
             this->function_args_names = args_names;
             this->env = env;

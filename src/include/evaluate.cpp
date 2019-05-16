@@ -13,6 +13,10 @@ namespace lisp {
     }
 
     // TODO 完善错误信息检查...
+    //   对lambda,define,..语法的进一步限制.. (考虑放到scanner解析lambda,define等关键字,
+    //   parser帮助分析这种情况,但parser不要过多分析语法)
+    //     => lambda不能独立声明,只能放在列表里调用;
+    //     => define必须独立使用,即必须是独立的(define x [other_expr]) 语句,不能将define嵌套在其他列表里..
 
     /**
      * 非csp的evaluator
@@ -34,13 +38,17 @@ namespace lisp {
                     // op_child 是 单独一个 Token,此时肯定是: atom函数调用/define定义/cond调用/lambda定义
                     if (op_child->token->type == TokenType::ATOM) {
                         string_t name = *std::get<string_ptr>(op_child->token->value);
-                        if (name == "define") {
+                        if (name == "define" || name == "define_const") { // 定义变量或常量,常量一旦定义,无法通过任何方式修改
                             // define 结束后是没有返回的,但是这里可以考虑返回nil
                             // define 必须满足: define atom [...]
                             if (args.size() == 2 &&
                                 args[0]->token != nullptr &&
                                 args[0]->token->type == TokenType::ATOM) {
-                                if (!env->insert(*std::get<string_ptr>(args[0]->token->value), eval(args[1], env))) {
+                                auto definition_value = eval(args[1], env); // 默认值都是非const的(除了nil类型)
+                                if (name == "define_const") {
+                                    set_Value_const(definition_value);
+                                }
+                                if (!env->insert(*std::get<string_ptr>(args[0]->token->value), definition_value)) {
                                     // 插入后返回false,可能是重定义符号或者define语句的第二个参数计算为空.
                                     report_semantic_error("redefine atom or definition is nil.");
                                 }
@@ -103,9 +111,8 @@ namespace lisp {
                             }
                         } else if (name == "set!") {
                             // set! atom expr
-                            // 1. 如果atom未定义,则报错; => 在Env::update()里检查
-                            // 2. set!允许返回expr的值,这样就可以出现(set! x (set! y expr))的连续赋值
-                            // 3. set!赋值的类型必须与atom之前储存的值类型一样 => 在Env::update()里检查
+                            // set!允许返回expr的值,这样就可以出现(set! x (set! y expr))的连续赋值
+                            // set!返回nil()有可能是: 符号未定义; 符号是const不能修改; 重新给符号设置的值与之前符号的类型不同
                             if (args.size() == 2 &&
                                 args[0]->token != nullptr &&
                                 args[0]->token->type == TokenType::ATOM) {

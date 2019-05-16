@@ -59,3 +59,9 @@ int main() {
 1
 2
 ```
+
+- 模拟 Common lisp object system
+参考: [https://www.dreamsongs.com/CLOS.html], 
+[https://lispcookbook.github.io/cl-cookbook/clos.html],
+[http://cl-cookbook.sourceforge.net/clos-tutorial/]
+
