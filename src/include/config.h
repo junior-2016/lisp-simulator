@@ -6,7 +6,9 @@
 #define LISP_SIMULATOR_CONFIG_H
 
 namespace lisp {
-#define USE_DOUBLE_AS_NUMBER
+#define USE_INT_AS_NUMBER
+    // 默认使用整数环境,如果用浮点数可能作业里的一些test case会报错(第四个case).
+    // (因为浮点数除法得到精确的浮点数,而整数除法会截取,所以在递归cond比较的时候可能浮点数会陷入死循环)
 
 #define DELAY_FOR_ERROR_OUTPUT 0.3s
 
