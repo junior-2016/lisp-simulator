@@ -12,8 +12,8 @@ namespace lisp {
         return decltype(self)(self)->is_type_const(decltype(args)(args)...);
     };
 
-    variant_method_invoke variant_set_value_const_invoke = [](auto &&self, auto &&... args) -> decltype(auto) {
-        decltype(self)(self)->set_type_const(decltype(args)(args)...);
+    variant_method_invoke variant_set_value_var_invoke = [](auto &&self, auto &&... args) -> decltype(auto) {
+        decltype(self)(self)->set_type_var(decltype(args)(args)...);
     };
 
     string_t value_to_string(Function::Value value) {
@@ -24,7 +24,8 @@ namespace lisp {
         return (value->*(variant_is_value_const_invoke))();
     }
 
-    void set_Value_const(Function::Value value) {
-        (value->*(variant_set_value_const_invoke))();
+    void set_Value_var(Function::Value value) {
+        (value->*(variant_set_value_var_invoke))();
     }
+
 }

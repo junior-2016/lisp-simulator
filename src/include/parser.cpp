@@ -11,24 +11,32 @@ namespace lisp {
 
     inline void skip_token() { ++pos; }
 
+    int list_deep = 0; // 用来判断 define/defvar 有没有位于顶层
+
     Ast::ptr traverseTokenList() {
         if (is_token_end()) {
-            report_syntax_error("error");
+            report_syntax_error("parse to the end early");
             return nullptr;
         }
         auto token = *pos;
         skip_token();
         if (token->type == TokenType::RPAREN) {
-            report_syntax_error("error");
+            report_syntax_error("paren match error");
             return nullptr;
         } else if (token->type == TokenType::LPAREN) {
             Ast::ptr root = make_ptr<Ast>();
+            list_deep++;
             while ((*pos)->type != TokenType::RPAREN) {
                 root->add_child(traverseTokenList());
             }
+            list_deep--;
             skip_token();
             return root;
         } else {
+            if ((token->type == TokenType::DEFINE || token->type == TokenType::DEFVAR)
+                && list_deep != 1) {
+                report_syntax_error("define or defvar not on the top level");
+            }
             return make_ptr<Ast>(token);
         }
     }
@@ -37,6 +45,7 @@ namespace lisp {
         auto tokenList = Scanner::getTokenList(source);
         pos = tokenList.begin();
         end_pos = tokenList.end();
+        list_deep = 0;
         return traverseTokenList();
     }
 

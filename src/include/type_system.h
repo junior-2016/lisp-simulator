@@ -12,9 +12,9 @@ namespace lisp {
 
     struct TypeSystem {
     protected:
-        bool is_const = false; // 所有类型默认都不是const类型
+        bool is_const = true; // 所有类型默认const
     public:
-        explicit TypeSystem(bool is_const = false) : is_const(is_const) {}
+        explicit TypeSystem(bool is_const = true) : is_const(is_const) {}
 
         virtual inline string_t to_string() const {
             return "";
@@ -24,28 +24,14 @@ namespace lisp {
 
         bool is_type_const() const { return is_const; }
 
-        void set_type_const() { is_const = true; }
-    };
-
-    struct String : public TypeSystem {
-        using ptr = Ptr<String>::Type;
-        string_t string;
-
-        explicit String(string_t string, bool is_const = false) :
-                TypeSystem(is_const), string(std::move(string)) {}
-
-        inline string_t to_string() const override {
-            return string;
-        }
-
-        ~String() override = default;
+        void set_type_var() { is_const = false; }
     };
 
     struct Number : public TypeSystem { // 数值类型
         using ptr = Ptr<Number>::Type;
         number_t number;
 
-        explicit Number(number_t number, bool is_const = false) :
+        explicit Number(number_t number, bool is_const = true) :
                 TypeSystem(is_const), number(number) {}
 
         inline string_t to_string() const override {
@@ -59,7 +45,7 @@ namespace lisp {
         using ptr = Ptr<Bool>::Type;
         bool value;
 
-        explicit Bool(bool value, bool is_const = false) :
+        explicit Bool(bool value, bool is_const = true) :
                 TypeSystem(is_const), value(value) {}
 
         inline string_t to_string() const override {
@@ -85,10 +71,11 @@ namespace lisp {
      */
     class Function : public TypeSystem {
     public:
-        // Value的定义应该放在Function里,从而依赖于Function. 因为Function的参数和返回值都是Value类型,
-        // 并且Value自己也需要拥有Function的定义,那么最佳的设计就是将Value变成Function的一个成员类型.
-        // 注意Value在储存Function的时候必须储存函数的指针,这样后面才能通过指针cast来判断这个函数是不是特定的函数子类对象!!
         using ptr = Ptr<Function>::Type;
+        const static size_t Function_Value_Nil_Index = 0;
+        const static size_t Function_Value_Number_Index = 1;
+        const static size_t Function_Value_Bool_Index = 2;
+        const static size_t Function_Value_Function_Index = 3;
         using Value = std::variant<nil::ptr, Number::ptr, Bool::ptr, Function::ptr>;
         using FunctionType = std::function<Function::Value(const std::vector<Function::Value> &)>;
     private:
@@ -97,9 +84,9 @@ namespace lisp {
     public:
         // 继承Function的函数类有时候想要通过重写operator()来实现一些别的功能,并且也用不到内部持有的function对象(比如Procedure类),
         // 但继承的函数类还是需要初始化父类的成员,所以这里提供一个无参的Function()构造来初始化内部function对象为默认的空实现.
-        explicit Function(bool is_const = false) : TypeSystem(is_const) {}
+        explicit Function(bool is_const = true) : TypeSystem(is_const) {}
 
-        explicit Function(FunctionType function, bool is_const = false) :
+        explicit Function(FunctionType function, bool is_const = true) :
                 TypeSystem(is_const), function(std::move(function)) {}
 
         ~Function() override = default;
@@ -116,19 +103,19 @@ namespace lisp {
     };
 
     inline bool is_Value_nil(const Function::Value &value) {
-        return value.index() == 0;
+        return value.index() == Function::Function_Value_Nil_Index;
     }
 
     inline bool is_Value_Number(const Function::Value &value) {
-        return value.index() == 1;
+        return value.index() == Function::Function_Value_Number_Index;
     }
 
     inline bool is_Value_Bool(const Function::Value &value) {
-        return value.index() == 2;
+        return value.index() == Function::Function_Value_Bool_Index;
     }
 
     inline bool is_Value_Function(const Function::Value &value) {
-        return value.index() == 3;
+        return value.index() == Function::Function_Value_Function_Index;
     }
 
     // 判断两个Value是否同类型
@@ -139,7 +126,7 @@ namespace lisp {
                (is_Value_Function(a) && is_Value_Function(b));
     }
 
-    // 统一输出接口
+    // 为了方便调用Function::Value的公共接口(在TypeSystem定义),提供一个variant_method_invoke模板,借助std::visit调用
     template<typename F>
     struct variant_method_invoke {
         F f;
@@ -163,6 +150,6 @@ namespace lisp {
 
     bool is_Value_const(Function::Value value);
 
-    void set_Value_const(Function::Value value);
+    void set_Value_var(Function::Value value);
 }
 #endif //LISP_SIMULATOR_TYPE_SYSTEM_H

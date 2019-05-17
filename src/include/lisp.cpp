@@ -50,10 +50,10 @@ namespace lisp {
                         error_output("%s\n", "The valid source input is empty.");
                     } else {
                         auto root = parse(source);
-                        if (PRINT_AST) {
-                            auto ast_str = Ast::to_string(root);
-                            standard_output("%s", ast_str.c_str());
-                        }
+#ifdef DEBUG
+                        auto ast_str = Ast::to_string(root);
+                        standard_output("%s", ast_str.c_str());
+#endif
                         if (ExceptionHandle::global_handle().hasException()) {
                             auto message = ExceptionHandle::global_handle().to_string();
                             error_output("%s", message.c_str());
@@ -80,8 +80,6 @@ namespace lisp {
     void test_all() {
         UtilTestCase::test();
     }
-
-    // TODO: 1. 添加对lisp文件的解释执行
 
     void main() {
 #ifdef DEBUG

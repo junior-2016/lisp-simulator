@@ -63,7 +63,7 @@ namespace lisp {
         static Env::handle global_handle = make_ptr<Env>(); // outer_env 为空
         // 注意全局env里所有预定义的变量都是const的.
         global_handle->map = {
-                {"+",
+                {"+", // TODO: 提供对String的支持
                           make_ptr<Function>(
                                   [](const std::vector<Function::Value> &args) -> Function::Value {
                                       if (args.size() == 2 && is_Value_Number(args[0]) && is_Value_Number(args[1]))
