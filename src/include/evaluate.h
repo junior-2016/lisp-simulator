@@ -44,7 +44,7 @@ namespace lisp {
         Env::handle env;
     public:
         Procedure(const Ast::ptr &body, const std::vector<string_t> &args_names, const Env::handle &env,
-                  bool is_const = false) : Function(is_const) {
+                  bool is_const = true) : Function(is_const) {
             this->function_body = body;
             this->function_args_names = args_names;
             this->env = env;

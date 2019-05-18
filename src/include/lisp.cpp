@@ -12,7 +12,19 @@
 namespace lisp {
     void man_help() {
         standard_output("%s\n", "---------------- MAN DOC HELP ------------------");
-
+        standard_output("%s\n", "(define atom <expr>): define a const atom which value is from <expr>.");
+        standard_output("%s\n", "(defvar atom <expr>): define a variable which value is from <expr>.");
+        standard_output("%s\n", "(lambda (atom list) (lambda_body)): declare a lambda function.");
+        standard_output("%s\n", "(cond (bool_expr value_expr) (bool_expr value_expr) ... ): condition function.");
+        standard_output("%s\n", "(eq? arg_0 arg_1): check arg_0 and arg_1 equal.");
+        standard_output("%s\n", "(set! atom <expr>): change value of a variable atom.");
+        standard_output("%s\n", "(+ arg_0 arg_1): add function.");
+        standard_output("%s\n", "(- arg_0 arg_1): minus function.");
+        standard_output("%s\n", "(* arg_0 arg_1): times function.");
+        standard_output("%s\n", "(/ arg_0 arg_1): over function.");
+        standard_output("%s\n", "True: true literal.");
+        standard_output("%s\n", "False: false literal.");
+        standard_output("%s\n", "-------------------------------------------------");
     }
 
     void interpreter_mode() {
