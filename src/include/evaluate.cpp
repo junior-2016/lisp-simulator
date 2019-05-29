@@ -72,10 +72,11 @@ namespace lisp {
                                op_child->token->type == TokenType::DEFVAR) {
                         // define 结束后是没有返回的,但是这里可以考虑返回nil
                         // define 必须满足: define atom [...]
+                        // 注意 defvar 对 nil 类型或者 Function 类型的变量无效,它们依然是const变量
                         if (args.size() == 2 &&
                             args[0]->token != nullptr &&
                             args[0]->token->type == TokenType::ATOM) {
-                            auto definition_value = eval(args[1], env); // 默认值都是非const的(除了nil类型)
+                            auto definition_value = eval(args[1], env);
                             if (op_child->token->type == TokenType::DEFVAR) {
                                 set_Value_var(definition_value);
                             }

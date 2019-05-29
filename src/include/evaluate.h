@@ -30,7 +30,7 @@ namespace lisp {
      * V.operator(5,6) 内部调用 eval(this->body,Env(this->args_names,args,this->env))
      */
     // Procedure作为Function的子类,可以直接存在EnvValue里(向上直接cast为父类Function)
-    class Procedure : public Function {
+    struct Procedure : public Function {
     private:
         // lambda 函数体就是: Ast[ 0: lambda 1: (args_list) 2: (body)] 切下来的 Ast[2],直接保存这个节点即可,
         // 后面再通过eval(body,env)来进一步执行body的内容,即懒惰执行.
@@ -57,6 +57,11 @@ namespace lisp {
 
         string_t to_string() const override {
             return Function::to_string(); // 这里懒得写,直接返回父类实现
+        }
+
+        void set_type_var() override {
+            error_output("%s\n", "Function type (here is Procedure) can't be non-const. "
+                                 "defvar or set! has no effect.");
         }
 
         ~Procedure() override = default;

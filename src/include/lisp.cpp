@@ -13,7 +13,8 @@ namespace lisp {
     void man_help() {
         standard_output("%s\n", "---------------- MAN DOC HELP ------------------");
         standard_output("%s\n", "(define atom <expr>): define a const atom which value is from <expr>.");
-        standard_output("%s\n", "(defvar atom <expr>): define a variable which value is from <expr>.");
+        standard_output("%s\n", "(defvar atom <expr>): define a variable which value is from <expr>, \n note that "
+                                "function or nil type can't be non-const,so define a function/nil variable has no effect.");
         standard_output("%s\n", "(lambda (atom list) (lambda_body)): declare a lambda function.");
         standard_output("%s\n", "(cond (bool_expr value_expr) (bool_expr value_expr) ... ): condition function.");
         standard_output("%s\n", "(eq? arg_0 arg_1): check arg_0 and arg_1 equal.");

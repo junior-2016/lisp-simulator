@@ -40,10 +40,8 @@ namespace lisp {
                 return this->outer_env->update(atom_name, update_value);
             }
         }
-        if (!is_Value_const((*pos).second) && is_Value_same_type((*pos).second, update_value)) {
-            return (*pos).second = update_value;
-        }
-        return nil::null();
+        // 使用安全的assign操作!!!
+        return try_assign_Value((*pos).second, update_value);
     }
 
     Function::Value Env::find(const string_t &atom_name) {

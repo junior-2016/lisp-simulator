@@ -8,5 +8,9 @@
 
 ##### Build and Run
 ```bash
-
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
+$ ./lisp_simulator
 ```

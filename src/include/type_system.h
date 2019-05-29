@@ -7,6 +7,7 @@
 
 #include "lisp.h"
 #include "util.h"
+#include "io_tool.h"
 
 namespace lisp {
 
@@ -24,7 +25,8 @@ namespace lisp {
 
         bool is_type_const() const { return is_const; }
 
-        void set_type_var() { is_const = false; }
+        // 这里将 set_type_var 变成虚函数, 将本类型是否可以转为非const变量的权利交给类型本身
+        virtual void set_type_var() {} // 默认空实现
     };
 
     struct Number : public TypeSystem { // 数值类型
@@ -37,6 +39,8 @@ namespace lisp {
         inline string_t to_string() const override {
             return std::to_string(number);
         }
+
+        void set_type_var() override { is_const = false; }
 
         ~Number() override = default;
     };
@@ -51,6 +55,10 @@ namespace lisp {
         inline string_t to_string() const override {
             return value ? "True" : "False";
         }
+
+        void set_type_var() override { is_const = false; }
+
+        ~Bool() override = default;
     };
 
     struct nil : TypeSystem { // 空类型,必然是const型
@@ -64,12 +72,18 @@ namespace lisp {
             static nil::ptr global_nil = make_ptr<nil>();
             return global_nil;
         }
+
+        void set_type_var() override {
+            error_output("%s\n", "nil type can't be non-const. defvar or set! has no effect.");
+        }
+
+        ~nil() override = default;
     };
 
     /**
      * 定义函数抽象类型 Function,同时带有虚函数接口: virtual Value operator()(std::vector<Value>&args) ;
      */
-    class Function : public TypeSystem {
+    struct Function : public TypeSystem {
     public:
         using ptr = Ptr<Function>::Type;
         const static size_t Function_Value_Nil_Index = 0;
@@ -100,6 +114,10 @@ namespace lisp {
         string_t to_string() const override {
             return "Function";
         }
+
+        void set_type_var() override {
+            error_output("%s\n", "Function type can't be non-const. defvar or set! has no effect.");
+        }
     };
 
     inline bool is_Value_nil(const Function::Value &value) {
@@ -120,10 +138,7 @@ namespace lisp {
 
     // 判断两个Value是否同类型
     inline bool is_Value_same_type(const Function::Value &a, const Function::Value &b) {
-        return (is_Value_Number(a) && is_Value_Number(b)) ||
-               (is_Value_Bool(a) && is_Value_Bool(b)) ||
-               (is_Value_nil(a) && is_Value_nil(b)) ||
-               (is_Value_Function(a) && is_Value_Function(b));
+        return a.index() == b.index();
     }
 
     // 为了方便调用Function::Value的公共接口(在TypeSystem定义),提供一个variant_method_invoke模板,借助std::visit调用
@@ -151,5 +166,14 @@ namespace lisp {
     bool is_Value_const(Function::Value value);
 
     void set_Value_var(Function::Value value);
+
+    /**
+     * 抽象出一个统一的 Value Assign 用于执行 a = b.
+     * 在这个过程中可以做到:
+     * 1. 检查 a 与 b 的类型是否统一,类型不统一返回nil;
+     * 2. 检查 a 是否为 const变量,若为const则禁止赋值,返回nil;
+     * 3. 进行安全的赋值操作,即只将b的数据成员赋值给a,而不会修改a的const语义等其他成员,
+     */
+    Function::Value try_assign_Value(Function::Value &a, const Function::Value &b);
 }
 #endif //LISP_SIMULATOR_TYPE_SYSTEM_H
