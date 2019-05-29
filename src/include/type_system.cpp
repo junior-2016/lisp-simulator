@@ -36,9 +36,12 @@ namespace lisp {
             std::get<Number::ptr>(a)->number = std::get<Number::ptr>(b)->number;
         } else if (is_Value_Bool(a)) {
             std::get<Bool::ptr>(a)->value = std::get<Bool::ptr>(b)->value;
-        } else if (is_Value_nil(a) || is_Value_Function(a)) { // 不允许nil或者Function类型修改值
-            return nil::null();
         }
+        // Function 或者 nil 类型的变量被禁止修改const属性,所以这里无需检查Function或nil
+        // (因为它们必定是const的,在一开始就被过滤了)
+        /*else if (is_Value_nil(a) || is_Value_Function(a)) {
+            return nil::null();
+        }*/
         return a;
     }
 }
